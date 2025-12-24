@@ -19,12 +19,10 @@ import {
   SearchOutlined,
   PlusOutlined,
   EyeOutlined,
-  EditOutlined,
-  DeleteOutlined,
 } from "@ant-design/icons";
 import ConfigProvider from "antd/es/config-provider";
-import { useDemandStore } from "../../store/demandStore";
-import { useUserStore } from "../../store/userStore";
+import { useDemandStore } from "../../store/modules/demandStore";
+import { useUserStore } from "../../store/modules/userStore";
 import antdTheme from "../../config/theme";
 import styled from "styled-components";
 
@@ -61,12 +59,21 @@ const Demand = () => {
     handlePaginationChange,
     deleteDemand,
     resetFilters,
+    fetchAllDemands,
+    fetchServiceTypes,
   } = useDemandStore();
 
-  // 初始化加载所有需求，并根据用户登录状态筛选
+  // 初始化加载所有需求和服务类型，并根据用户登录状态筛选
   useEffect(() => {
-    resetFilters();
-  }, [resetFilters, isLoggedIn, userInfo?.id, filterByUserId]);
+    const loadData = async () => {
+      await Promise.all([
+        fetchAllDemands(),
+        fetchServiceTypes()
+      ]);
+      resetFilters();
+    };
+    loadData();
+  }, [resetFilters, isLoggedIn, userInfo?.id, filterByUserId, fetchAllDemands, fetchServiceTypes]);
 
   // 处理类型筛选
   const handleTypeChange = (type) => {
@@ -95,16 +102,6 @@ const Demand = () => {
     navigate(`/demand/${id}`);
   };
 
-  // 处理编辑需求
-  const handleEdit = (id) => {
-    navigate(`/demand/edit/${id}`);
-  };
-
-  // 处理删除需求
-  const handleDelete = (id) => {
-    deleteDemand(id);
-    message.success("需求删除成功");
-  };
 
   // 处理创建新需求
   const handleCreate = () => {
@@ -113,9 +110,10 @@ const Demand = () => {
 
   // 状态标签颜色映射
   const statusColorMap = {
-    待处理: antdTheme.token.colorPrimary,
-    处理中: antdTheme.token.colorWarning,
-    已完成: antdTheme.token.colorSuccess,
+    PUBLISHED: antdTheme.token.colorPrimary,    // 刚发布 - 蓝色
+    RESPONDED: antdTheme.token.colorWarning,    // 已响应 - 橙色
+    RESOLVED: antdTheme.token.colorSuccess,     // 已完成 - 绿色
+    CANCELLED: '#999999',                       // 已取消 - 灰色
   };
 
   // 分页配置
@@ -167,7 +165,7 @@ const Demand = () => {
                 }}
               >
                 <Option value="all">所有类型</Option>
-                {serviceTypes.map((type) => (
+                {serviceTypes && serviceTypes.map((type) => (
                   <Option key={type} value={type}>
                     {type}
                   </Option>
@@ -214,23 +212,6 @@ const Demand = () => {
                 }}
               />
             </Col>
-
-            <Col style={{ width: 150, marginRight: 30 }}>
-              <Button
-                type="primary"
-                icon={<PlusOutlined />}
-                onClick={handleCreate}
-                style={{
-                  height: 48,
-                  fontSize: 20,
-                  borderRadius: 24,
-                  width: 150,
-                  backgroundColor: antdTheme.token.colorPrimary,
-                }} // 让按钮高度、字体（进而图标大小）匹配
-              >
-                创建需求
-              </Button>
-            </Col>
           </Row>
         </Card>
 
@@ -243,7 +224,7 @@ const Demand = () => {
                   level={3}
                   style={{ margin: 0, color: antdTheme.token.colorPrimary }}
                 >
-                  {filteredDemands.length}
+                  {filteredDemands ? filteredDemands.length : 0}
                 </Title>
                 <div>当前展示需求数</div>
               </div>
@@ -256,7 +237,7 @@ const Demand = () => {
                   level={3}
                   style={{ margin: 0, color: antdTheme.token.colorSuccess }}
                 >
-                  {filteredDemands.filter((d) => d.status === "已完成").length}
+                  {filteredDemands ? filteredDemands.filter((d) => d.status === "RESOLVED").length : 0}
                 </Title>
                 <div>已完成需求数</div>
               </div>
@@ -269,7 +250,7 @@ const Demand = () => {
                   level={3}
                   style={{ margin: 0, color: antdTheme.token.colorWarning }}
                 >
-                  {filteredDemands.filter((d) => d.status === "处理中").length}
+                  {filteredDemands ? filteredDemands.filter((d) => d.status === "RESPONDED").length : 0}
                 </Title>
                 <div>处理中需求数</div>
               </div>
@@ -280,7 +261,7 @@ const Demand = () => {
         {/* 需求列表 - 卡片瀑布流 */}
         <Card>
           <Spin spinning={loading} tip="加载中...">
-            {filteredDemands.length > 0 ? (
+            {filteredDemands && filteredDemands.length > 0 ? (
               <Row gutter={[16, 16]}>
                 {filteredDemands.map((demand) => (
                   <Col key={demand.id} xs={24} sm={12} md={8} lg={8} xl={6}>
@@ -295,64 +276,29 @@ const Demand = () => {
                           }}
                         >
                           <span>{demand.title}</span>
-                          <Tag
-                            color={statusColorMap[demand.status] || "default"}
-                          >
+                          <Tag color="default" style={{ backgroundColor: '#f0f0f0' }}>
                             {demand.status}
                           </Tag>
                         </div>
                       }
                       actions={[
-                        <Button
-                          type="primary"
-                          icon={<EyeOutlined />}
-                          size="small"
-                          style={{
-                            height: 32,
-                            backgroundColor: antdTheme.token.colorPrimary,
-                            color: antdTheme.token.colorBgContainer,
-                            fontSize: 16,
-                            borderRadius: 12,
-                            lineHeight: "32px",
-                          }}
-                          onClick={() => handleViewDetail(demand.id)}
-                        >
-                          查看
-                        </Button>,
-                        <Button
-                          type="default"
-                          icon={<EditOutlined />}
-                          size="small"
-                          onClick={() => handleEdit(demand.id)}
-                          style={{
-                            height: 32,
-                            backgroundColor: antdTheme.token.colorSuccess,
-                            color: antdTheme.token.colorBgContainer,
-                            fontSize: 16,
-                            borderRadius: 12,
-                            lineHeight: "32px",
-                          }}
-                        >
-                          编辑
-                        </Button>,
-                        <Button
-                          type="danger"
-                          icon={<DeleteOutlined />}
-                          size="small"
-                          onClick={() => handleDelete(demand.id)}
-                          style={{
-                            height: 32,
-                            backgroundColor: antdTheme.token.colorError,
-                            color: antdTheme.token.colorBgContainer,
-                            fontSize: 16,
-                            borderRadius: 12,
-                            lineHeight: "32px",
-                            border: "none",
-                          }}
-                        >
-                          删除
-                        </Button>,
-                      ]}
+                      <Button
+                        type="primary"
+                        icon={<EyeOutlined />}
+                        size="small"
+                        style={{
+                          height: 32,
+                          backgroundColor: antdTheme.token.colorPrimary,
+                          color: antdTheme.token.colorBgContainer,
+                          fontSize: 16,
+                          borderRadius: 12,
+                          lineHeight: "32px",
+                        }}
+                        onClick={() => handleViewDetail(demand.id)}
+                      >
+                        查看
+                      </Button>
+                    ]}
                       style={{
                         height: "100%",
                         display: "flex",
@@ -360,13 +306,45 @@ const Demand = () => {
                       }}
                     >
                       <div style={{ marginBottom: 8 }}>
+                        <strong>服务ID:</strong> {demand.originalData?.serviceId || '未知'}
+                      </div>
+                      <div style={{ marginBottom: 8 }}>
                         <strong>服务类型:</strong> {demand.type}
                       </div>
                       <div style={{ marginBottom: 8, minHeight: 60 }}>
                         <strong>需求描述:</strong> {demand.description}
                       </div>
                       <div style={{ marginBottom: 8 }}>
+                        <strong>位置ID:</strong> {demand.originalData?.locationId || '未知'}
+                      </div>
+                      <div style={{ marginBottom: 8 }}>
                         <strong>地址:</strong> {demand.address}
+                      </div>
+                      <div
+                        style={{
+                          marginBottom: 8,
+                          fontSize: "12px",
+                          color: "#999",
+                        }}
+                      >
+                        <strong>开始时间:</strong>{" "}
+                        {demand.originalData?.startTime ? 
+                          new Date(demand.originalData.startTime.seconds * 1000).toLocaleString() : 
+                          '未设置'
+                        }
+                      </div>
+                      <div
+                        style={{
+                          marginBottom: 8,
+                          fontSize: "12px",
+                          color: "#999",
+                        }}
+                      >
+                        <strong>结束时间:</strong>{" "}
+                        {demand.originalData?.endTime ? 
+                          new Date(demand.originalData.endTime.seconds * 1000).toLocaleString() : 
+                          '未设置'
+                        }
                       </div>
                       <div
                         style={{
@@ -426,7 +404,7 @@ const Demand = () => {
         <Divider />
         <div style={{ textAlign: "center", color: "#999" }}>
           <Typography.Text>
-            使用筛选和搜索功能查找特定需求，点击操作列按钮进行详情查看、编辑或删除
+            使用筛选和搜索功能查找特定需求，点击查看按钮查看详情
           </Typography.Text>
         </div>
       </div>

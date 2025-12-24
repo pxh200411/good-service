@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { login as loginApi, register as registerApi } from '../../api/modules/auth';
+import { updateUserByPatch } from '../../api/modules/user';
 
 // 定义用户信息类型
 const initialUserInfo = {
@@ -29,27 +31,27 @@ export const useUserStore = create(
         try {
           set({ loading: true, error: null });
           
-          // 这里可以替换为实际的API调用
-          // const response = await api.login(credentials);
+          // 调用真实的登录API
+          const response = await loginApi(credentials);
           
-          // 模拟API响应
-          const mockResponse = {
-            token: 'mock-jwt-token-' + Date.now(),
-            user: {
-              id: 'user-1', // 使用固定的userId，与mock数据匹配
-              username: credentials.username,
-              email: '',
-              phone: '',
-              avatar: '',
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-            },
+          // 只要返回了token就是登录成功
+          const { token, user } = response;
+          
+          // 如果没有用户信息，创建默认用户信息
+          const userInfo = user || {
+            id: 'user-' + Date.now(),
+            username: credentials.username,
+            email: '',
+            phone: '',
+            avatar: '',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
           };
 
           set({
             isLoggedIn: true,
-            token: mockResponse.token,
-            userInfo: mockResponse.user,
+            token: token,
+            userInfo: userInfo,
             loading: false,
           });
 
@@ -57,7 +59,7 @@ export const useUserStore = create(
         } catch (error) {
           set({
             loading: false,
-            error: error.message || '登录失败',
+            error: error.response?.data?.message || error.message || '登录失败',
           });
           return false;
         }
@@ -68,27 +70,19 @@ export const useUserStore = create(
         try {
           set({ loading: true, error: null });
           
-          // 这里可以替换为实际的API调用
-          // const response = await api.register(userData);
+          // 调用真实的注册API
+          const response = await registerApi(userData);
           
-          // 模拟API响应
-          const mockResponse = {
-            token: 'mock-jwt-token-' + Date.now(),
-            user: {
-              id: 'user-' + Date.now(),
-              username: userData.username,
-              email: userData.email,
-              phone: userData.phone,
-              avatar: '',
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-            },
-          };
+          // API返回格式为用户信息对象，不包含token
+          const user = response.data;
+          
+          // 生成临时token（实际应用中可能需要后端返回token或单独的登录步骤）
+          const token = 'temp-token-' + Date.now();
 
           set({
             isLoggedIn: true,
-            token: mockResponse.token,
-            userInfo: mockResponse.user,
+            token: token,
+            userInfo: user,
             loading: false,
           });
 
@@ -96,7 +90,7 @@ export const useUserStore = create(
         } catch (error) {
           set({
             loading: false,
-            error: error.message || '注册失败',
+            error: error.response?.data?.message || error.message || '注册失败',
           });
           return false;
         }
@@ -117,15 +111,12 @@ export const useUserStore = create(
         try {
           set({ loading: true, error: null });
           
-          // 这里可以替换为实际的API调用
-          // const response = await api.updateUser(updates);
+          // 调用真实的更新用户信息API
+          const currentUser = get().userInfo;
+          const response = await updateUserByPatch(currentUser.username, updates);
           
-          // 模拟API响应
-          const updatedUser = {
-            ...get().userInfo,
-            ...updates,
-            updatedAt: new Date().toISOString(),
-          };
+          // 假设API返回更新后的用户信息
+          const updatedUser = response.data;
 
           set({
             userInfo: updatedUser,
@@ -136,7 +127,7 @@ export const useUserStore = create(
         } catch (error) {
           set({
             loading: false,
-            error: error.message || '更新用户信息失败',
+            error: error.response?.data?.message || error.message || '更新用户信息失败',
           });
           return false;
         }

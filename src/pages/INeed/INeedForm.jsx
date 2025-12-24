@@ -2,7 +2,8 @@ import React, { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Form, Input, Select, Button, Card, Typography, Row, Col, Space, Divider, Spin, message } from 'antd';
 import { ArrowLeftOutlined, SaveOutlined } from '@ant-design/icons';
-import { useDemandStore } from '../../store/demandStore';
+import { useDemandStore } from '../../store/modules/demandStore';
+import CascadeAddressSelector from '../../components/CascadeAddressSelector';
 
 const { Title } = Typography;
 const { TextArea } = Input;
@@ -36,18 +37,27 @@ const INeedForm = () => {
   // 当currentDemand变化时，填充表单数据（编辑模式）
   useEffect(() => {
     if (isEditMode && currentDemand) {
-      // 检查状态是否为待处理，如果不是，不允许编辑
-      if (currentDemand.status !== '待处理') {
-        message.warning('只有待处理的需求可以编辑');
+      // 检查状态是否为PUBLISHED，如果不是，不允许编辑
+      if (currentDemand.status && currentDemand.status !== "PUBLISHED") {
         navigate('/i-need');
         return;
+      }
+      
+      // 解析地址信息，如果currentDemand中有地址信息，需要解析为省市区
+      let addressValue = {};
+      if (currentDemand.address) {
+        // 这里假设地址格式为"省市区"，需要根据实际情况调整解析逻辑
+        // 暂时使用完整地址作为默认值
+        addressValue = {
+          fullAddress: currentDemand.address
+        };
       }
       
       form.setFieldsValue({
         type: currentDemand.type,
         title: currentDemand.title,
         description: currentDemand.description,
-        address: currentDemand.address
+        address: addressValue
       });
     }
   }, [isEditMode, currentDemand, form, navigate]);
@@ -60,14 +70,29 @@ const INeedForm = () => {
   // 提交表单
   const handleSubmit = () => {
     form.validateFields().then(values => {
+      // 处理地址数据
+      const addressData = values.address || {};
+      const fullAddress = addressData.fullAddress || '';
+      
+      const submitData = {
+        ...values,
+        address: fullAddress, // 使用完整地址字符串
+        // 映射前端字段到API字段
+        locationId: addressData.item || 1, // 使用选择的区县ID作为locationId
+      };
+      
+      // 移除address对象，只保留字符串地址
+      delete submitData.address;
+      submitData.address = fullAddress;
+      
       if (isEditMode && id) {
         // 编辑需求
-        updateDemand(id, values);
+        updateDemand(id, submitData);
         message.success('需求更新成功');
         navigate('/i-need');
       } else {
         // 创建新需求
-        createDemand(values);
+        createDemand(submitData);
         message.success('需求创建成功');
         navigate('/i-need');
       }
@@ -91,8 +116,19 @@ const INeedForm = () => {
       { max: 500, message: '需求描述不能超过500个字符', trigger: 'blur' }
     ],
     address: [
-      { required: true, message: '请输入地址', trigger: 'blur' },
-      { max: 100, message: '地址不能超过100个字符', trigger: 'blur' }
+      { 
+        required: true, 
+        validator: (_, value) => {
+          if (!value || !value.fullAddress) {
+            return Promise.reject('请选择完整的地址信息');
+          }
+          if (value.fullAddress.length > 100) {
+            return Promise.reject('地址不能超过100个字符');
+          }
+          return Promise.resolve();
+        },
+        trigger: 'change'
+      }
     ]
   };
 
@@ -142,7 +178,7 @@ const INeedForm = () => {
             type: '',
             title: '',
             description: '',
-            address: '',
+            address: {},
             status: '待处理'
           }}
         >
@@ -190,13 +226,13 @@ const INeedForm = () => {
             </Col>
 
             {/* 地址 */}
-            <Col xs={24} sm={24} md={12} lg={12} xl={12}>
+            <Col xs={24} sm={24} md={24} lg={24} xl={24}>
               <Form.Item
                 name="address"
                 label="地址"
                 rules={formRules.address}
               >
-                <Input placeholder="请输入地址" maxLength={100} />
+                <CascadeAddressSelector />
               </Form.Item>
             </Col>
           </Row>

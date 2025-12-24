@@ -15,8 +15,8 @@ import {
   Tag,
 } from "antd";
 import { ArrowLeftOutlined, SaveOutlined } from "@ant-design/icons";
-import { useDemandStore } from "../../store/demandStore";
-import { useUserStore } from "../../store/userStore";
+import { useDemandStore } from "../../store/modules/demandStore";
+import { useUserStore } from "../../store/modules/userStore";
 
 const { Title } = Typography;
 const { TextArea } = Input;
@@ -55,11 +55,9 @@ const IServeResponseForm = () => {
   // 当currentDemand变化时，填充表单数据
   useEffect(() => {
     if (currentDemand) {
-      // 检查需求状态，如果不是待处理，不允许响应
-      if (currentDemand.status !== "待处理") {
-        message.warning("只有待处理的需求可以响应");
-        navigate("/demand");
-        return;
+        // 检查需求状态，如果不是PUBLISHED，显示提示但允许继续响应
+        if (currentDemand.status !== "PUBLISHED") {
+        message.info("此需求状态为" + currentDemand.status + "，您仍然可以提交响应");
       }
 
       // 检查是否已经登录
@@ -71,11 +69,11 @@ const IServeResponseForm = () => {
 
       // 如果是编辑模式，填充响应数据
       if (isEdit && response) {
-        // 检查响应状态，如果不是待审核，不允许编辑
-        if (response.status !== "待审核") {
-          message.warning("只有待审核的响应可以修改");
-          navigate("/i-serve");
-          return;
+        // 检查响应状态，如果不是PENDING，不允许编辑
+        if (response.status !== "PENDING") {
+          message.warning("只有PENDING状态的响应可以修改");
+          //navigate("/i-serve");
+          //return;
         }
 
         form.setFieldsValue({
@@ -95,32 +93,35 @@ const IServeResponseForm = () => {
   };
 
   // 提交表单
-  const handleSubmit = () => {
-    form
-      .validateFields()
-      .then((values) => {
-        const responseData = {
-          demandId,
-          userId: userInfo.id,
-          content: values.content,
-        };
+  const handleSubmit = async () => {
+    try {
+      const values = await form.validateFields();
+      const responseData = {
+        demandId,
+        userId: userInfo.id,
+        content: values.content,
+      };
 
-        if (isEdit && response) {
-          // 修改响应
-          updateServiceResponse(response.id, responseData);
-          message.success("响应更新成功");
-          navigate("/i-serve");
-        } else {
-          // 创建新响应
-          createServiceResponse(responseData);
-          message.success("响应提交成功");
-          navigate("/i-serve");
-        }
-      })
-      .catch((errorInfo) => {
+      if (isEdit && response) {
+        // 修改响应
+        await updateServiceResponse(response.id, responseData);
+        message.success("响应更新成功");
+        navigate("/i-serve");
+      } else {
+        // 创建新响应
+        await createServiceResponse(responseData);
+        message.success("响应提交成功");
+        navigate("/i-serve");
+      }
+    } catch (errorInfo) {
+      if (errorInfo.errorFields) {
         console.log("表单验证失败:", errorInfo);
         message.error("表单验证失败，请检查填写内容");
-      });
+      } else {
+        console.log("响应操作失败:", errorInfo);
+        message.error("操作失败，请稍后重试");
+      }
+    }
   };
 
   // 表单验证规则
@@ -183,7 +184,7 @@ const IServeResponseForm = () => {
             </Col>
             <Col xs={24} sm={24} md={24} lg={24} xl={8}>
               <strong>状态:</strong>{" "}
-              <Tag color="blue">{currentDemand.status}</Tag>
+              <Tag color="default" style={{ backgroundColor: '#f0f0f0' }}>{currentDemand.status}</Tag>
             </Col>
             <Col xs={24} sm={24} md={24} lg={24} xl={24}>
               <strong>需求描述:</strong> {currentDemand.description}

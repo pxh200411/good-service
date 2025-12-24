@@ -7,7 +7,7 @@ import {
   PhoneOutlined,
 } from "@ant-design/icons";
 import { useNavigate, Link } from "react-router-dom";
-import { useUserStore } from "../../store/userStore";
+import { useUserStore } from "../../store/modules/userStore";
 
 // 使用import引入背景图
 import backgroundImage from "../../assets/bg_base.png";

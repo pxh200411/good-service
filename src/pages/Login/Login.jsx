@@ -3,7 +3,7 @@ import { Form, Input, Button, Card, Typography, Space, message } from "antd";
 import { Link } from "react-router-dom";
 import { UserOutlined, LockOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
-import { useUserStore } from "../../store/userStore";
+import { useUserStore } from "../../store/modules/userStore";
 import antdTheme from "../../config/theme";
 
 // 使用import引入背景图

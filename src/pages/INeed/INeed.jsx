@@ -22,8 +22,8 @@ import {
   DeleteOutlined,
 } from "@ant-design/icons";
 import ConfigProvider from "antd/es/config-provider";
-import { useDemandStore } from "../../store/demandStore";
-import { useUserStore } from "../../store/userStore";
+import { useDemandStore } from "../../store/modules/demandStore";
+import { useUserStore } from "../../store/modules/userStore";
 import antdTheme from "../../config/theme";
 const { Title } = Typography;
 const { Option } = Select;
@@ -53,14 +53,22 @@ const INeed = () => {
 
   // 初始化加载当前用户的所有需求
   useEffect(() => {
-    if (isLoggedIn && userInfo?.id) {
-      // 只显示当前用户的需求
-      filterByUserId(userInfo.id);
-    } else {
-      // 如果用户未登录，跳转到登录页面
-      message.warning("请先登录查看您的需求");
-      navigate("/login");
-    }
+    const loadMyDemands = async () => {
+      if (isLoggedIn && userInfo?.id) {
+        try {
+          await filterByUserId(userInfo.id);
+        } catch (error) {
+          console.error('加载我的需求失败:', error);
+          message.error('加载我的需求失败，请稍后重试');
+        }
+      } else {
+        // 如果用户未登录，跳转到登录页面
+        message.warning("请先登录查看您的需求");
+        navigate("/login");
+      }
+    };
+    
+    loadMyDemands();
   }, [resetFilters, isLoggedIn, userInfo?.id, filterByUserId, navigate]);
 
   // 处理类型筛选
@@ -83,19 +91,19 @@ const INeed = () => {
     navigate(`/i-need/${id}`);
   };
 
-  // 处理编辑需求（只有待处理状态的需求可以编辑）
+  // 处理编辑需求（只有PUBLISHED状态的需求可以编辑）
   const handleEdit = (id, status) => {
-    if (status !== "待处理") {
-      message.warning("只有待处理的需求可以编辑");
+    if (status !== "PUBLISHED") {
+      message.warning("只有PUBLISHED状态的需求可以编辑");
       return;
     }
     navigate(`/i-need/edit/${id}`);
   };
 
-  // 处理删除需求（只有待处理状态的需求可以删除）
+  // 处理删除需求（只有PUBLISHED状态的需求可以删除）
   const handleDelete = (id, status) => {
-    if (status !== "待处理") {
-      message.warning("只有待处理的需求可以删除");
+    if (status !== "PUBLISHED") {
+      message.warning("只有PUBLISHED状态的需求可以删除");
       return;
     }
     deleteDemand(id);
@@ -109,26 +117,45 @@ const INeed = () => {
 
   // 状态标签颜色映射
   const statusColorMap = {
-    待处理: "blue",
-    处理中: "orange",
-    已完成: "green",
+    PUBLISHED: "blue",
+    RESPONDED: "orange",
+    RESOLVED: "green",
+    CANCELLED: "gray",
   };
 
   return (
-    <div style={{ padding: "20px", background: "#f0f2f5" }}>
-      <Title level={1} style={{ marginBottom: 24, textAlign: "center" }}>
-        我需要的服务
-      </Title>
+    <ConfigProvider theme={antdTheme}>
+      <div
+        style={{
+          padding: "20px",
+          background: antdTheme.token.colorBgContainer,
+        }}
+      >
+        <Title
+          level={1}
+          style={{
+            marginBottom: 24,
+            textAlign: "center",
+            color: antdTheme.token.colorText,
+          }}
+        >
+          我需要的服务
+        </Title>
 
-      {/* 筛选和搜索区域 */}
-      <Card style={{ marginBottom: 24 }}>
-        <Row gutter={[16, 16]} align="middle">
-          <Col xs={24} sm={24} md={8} lg={6} xl={5}>
+        {/* 筛选和搜索区域 */}
+        <Card style={{ marginBottom: 24 }}>
+          <Row gutter={[16, 16]} align="middle">
+          <Col style={{ width: 200 }}>
             <Select
               value={filterType}
               onChange={handleTypeChange}
               placeholder="选择服务类型"
-              style={{ width: "100%" }}
+                              style={{
+                  width: "100%",
+                  fontSize: 22,
+                  fontWeight: 500,
+                  color: antdTheme.token.colorText,
+                }}
               allowClear
             >
               <Option value="all">所有类型</Option>
@@ -140,35 +167,62 @@ const INeed = () => {
             </Select>
           </Col>
 
-          <Col xs={24} sm={24} md={12} lg={12} xl={12}>
-            <Search
-              placeholder="输入关键字搜索"
-              allowClear
-              enterButton={<SearchOutlined />}
-              size="middle"
-              value={searchKeyword}
-              onChange={(e) => searchDemands(e.target.value)}
-              onSearch={handleSearch}
-              style={{ width: "100%" }}
-            />
-          </Col>
+            <Col style={{ flex: 1 }}>
+              <Search
+                placeholder="输入关键字搜索"
+                allowClear
+                enterButton={
+                  <Button
+                    type="primary"
+                    icon={<SearchOutlined />}
+                    style={{
+                      height: 48,
+                      fontSize: 20,
+                      borderTopLeftRadius: 0,
+                      borderBottomLeftRadius: 0,
+                      borderTopRightRadius: 24,
+                      borderBottomRightRadius: 24,
+                      width: 60,
+                      backgroundColor: antdTheme.token.colorPrimary,
+                    }} // 让按钮高度、字体（进而图标大小）匹配
+                  />
+                }
+                value={searchKeyword}
+                onChange={(e) => searchDemands(e.target.value)}
+                onSearch={handleSearch}
+                styles={{
+                  affixWrapper: {
+                    borderTopLeftRadius: 24,
+                    borderBottomLeftRadius: 24,
+                    borderTopRightRadius: 0,
+                    borderBottomRightRadius: 0,
+                    paddingLeft: 16,
+                  },
+                  input: {
+                    fontSize: 22,
+                    fontWeight: 500,
+                    color: antdTheme.token.colorPrimary,
+                  },
+                }}
+              />
+            </Col>
 
-          <Col
-            xs={24}
-            sm={24}
-            md={4}
-            lg={6}
-            xl={7}
-            style={{ textAlign: "right" }}
-          >
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={handleCreate}
-            >
-              发布新需求
-            </Button>
-          </Col>
+            <Col style={{ width: 150, marginRight: 30 }}>
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={handleCreate}
+                style={{
+                  height: 48,
+                  fontSize: 20,
+                  borderRadius: 24,
+                  width: 150,
+                  backgroundColor: antdTheme.token.colorPrimary,
+                }} // 让按钮高度、字体（进而图标大小）匹配
+              >
+                创建需求
+              </Button>
+            </Col>
         </Row>
       </Card>
 
@@ -177,7 +231,7 @@ const INeed = () => {
         <Col xs={24} sm={12} md={8} lg={8} xl={8}>
           <Card>
             <div style={{ textAlign: "center" }}>
-              <Title level={3} style={{ margin: 0, color: "#1890ff" }}>
+              <Title level={3} style={{ margin: 0, color: antdTheme.token.colorPrimary }}>
                 {filteredDemands.length}
               </Title>
               <div>我的需求总数</div>
@@ -187,7 +241,7 @@ const INeed = () => {
         <Col xs={24} sm={12} md={8} lg={8} xl={8}>
           <Card>
             <div style={{ textAlign: "center" }}>
-              <Title level={3} style={{ margin: 0, color: "#52c41a" }}>
+              <Title level={3} style={{ margin: 0, color: antdTheme.token.colorSuccess }}>
                 {filteredDemands.filter((d) => d.status === "已完成").length}
               </Title>
               <div>已完成需求</div>
@@ -197,7 +251,7 @@ const INeed = () => {
         <Col xs={24} sm={12} md={8} lg={8} xl={8}>
           <Card>
             <div style={{ textAlign: "center" }}>
-              <Title level={3} style={{ margin: 0, color: "#faad14" }}>
+              <Title level={3} style={{ margin: 0, color: antdTheme.token.colorWarning }}>
                 {filteredDemands.filter((d) => d.status === "处理中").length}
               </Title>
               <div>处理中需求</div>
@@ -207,7 +261,7 @@ const INeed = () => {
         <Col xs={24} sm={12} md={8} lg={8} xl={8}>
           <Card>
             <div style={{ textAlign: "center" }}>
-              <Title level={3} style={{ margin: 0, color: "#1890ff" }}>
+              <Title level={3} style={{ margin: 0, color: antdTheme.token.colorPrimary }}>
                 {filteredDemands.filter((d) => d.status === "待处理").length}
               </Title>
               <div>待处理需求</div>
@@ -234,7 +288,7 @@ const INeed = () => {
                         }}
                       >
                         <span>{demand.title}</span>
-                        <Tag color={statusColorMap[demand.status] || "default"}>
+                        <Tag color="default" style={{ backgroundColor: '#f0f0f0' }}>
                           {demand.status}
                         </Tag>
                       </div>
@@ -244,28 +298,57 @@ const INeed = () => {
                         type="primary"
                         icon={<EyeOutlined />}
                         size="small"
+                        style={{
+                          height: 32,
+                          backgroundColor: antdTheme.token.colorPrimary,
+                          color: antdTheme.token.colorBgContainer,
+                          fontSize: 16,
+                          borderRadius: 12,
+                          lineHeight: "32px",
+                        }}
                         onClick={() => handleViewDetail(demand.id)}
                       >
                         查看
                       </Button>,
-                      <Button
-                        type="default"
-                        icon={<EditOutlined />}
-                        size="small"
-                        onClick={() => handleEdit(demand.id, demand.status)}
-                        disabled={demand.status !== "待处理"}
-                      >
-                        编辑
-                      </Button>,
-                      <Button
-                        type="danger"
-                        icon={<DeleteOutlined />}
-                        size="small"
-                        onClick={() => handleDelete(demand.id, demand.status)}
-                        disabled={demand.status !== "待处理"}
-                      >
-                        删除
-                      </Button>,
+                      ...(demand.userId === userInfo?.id ? [
+                        <Button
+                          key="edit"
+                          type="default"
+                          icon={<EditOutlined />}
+                          size="small"
+                          onClick={() => handleEdit(demand.id, demand.status)}
+                          disabled={demand.status !== "PUBLISHED"}
+                          style={{
+                            height: 32,
+                            backgroundColor: antdTheme.token.colorSuccess,
+                            color: antdTheme.token.colorBgContainer,
+                            fontSize: 16,
+                            borderRadius: 12,
+                            lineHeight: "32px",
+                          }}
+                        >
+                          编辑
+                        </Button>,
+                        <Button
+                          key="delete"
+                          type="danger"
+                          icon={<DeleteOutlined />}
+                          size="small"
+                          onClick={() => handleDelete(demand.id, demand.status)}
+                          disabled={demand.status !== "PUBLISHED"}
+                          style={{
+                            height: 32,
+                            backgroundColor: antdTheme.token.colorError,
+                            color: antdTheme.token.colorBgContainer,
+                            fontSize: 16,
+                            borderRadius: 12,
+                            lineHeight: "32px",
+                            border: "none",
+                          }}
+                        >
+                          删除
+                        </Button>
+                      ] : [])
                     ]}
                     style={{
                       height: "100%",
@@ -291,48 +374,49 @@ const INeed = () => {
                     >
                       <strong>创建时间:</strong> {new Date(demand.createTime).toLocaleString()}
                     </div>
-                    <div
-                      style={{
-                        fontSize: "12px",
-                        color: "#999",
-                        marginTop: "auto",
-                      }}
-                    >
-                      <strong>更新时间:</strong> {new Date(demand.updateTime).toLocaleString()}
-                    </div>
-                  </Card>
-                </Col>
-              ))}
-            </Row>
-          ) : (
-            <div style={{ textAlign: "center", padding: "40px" }}>
-              <Typography.Text type="secondary">您还没有发布任何需求</Typography.Text>
-              <Button
-                type="primary"
-                icon={<PlusOutlined />}
-                style={{ marginTop: 16 }}
-                onClick={handleCreate}
-              >
-                发布第一个需求
-              </Button>
-            </div>
-          )}
-        </Spin>
-      </Card>
-
-      {/* 说明 */}
-      <Divider />
-      <div style={{ textAlign: "center", color: "#999" }}>
-        <Typography.Text>
-          您可以查看、编辑和删除您发布的需求
-        </Typography.Text>
-        <br />
-        <Typography.Text type="secondary">
-          注意：只有状态为"待处理"的需求可以编辑和删除
-        </Typography.Text>
+      <div
+        style={{
+          fontSize: "12px",
+          color: antdTheme.token.colorTextSecondary,
+          marginTop: "auto",
+        }}
+      >
+        <strong>更新时间:</strong> {new Date(demand.updateTime).toLocaleString()}
       </div>
-    </div>
+    </Card>
+  </Col>
+))}
+</Row>
+) : (
+<div style={{ textAlign: "center", padding: "40px" }}>
+  <Typography.Text type="secondary">您还没有发布任何需求</Typography.Text>
+  <Button
+    type="primary"
+    icon={<PlusOutlined />}
+    style={{ marginTop: 16 }}
+    onClick={handleCreate}
+  >
+    发布第一个需求
+  </Button>
+</div>
+)}
+        </Spin>
+        </Card>
+
+        {/* 说明 */}
+        <Divider />
+        <div style={{ textAlign: "center", color: antdTheme.token.colorTextSecondary }}>
+          <Typography.Text>
+            您可以查看、编辑和删除您发布的需求
+          </Typography.Text>
+          <br />
+          <Typography.Text type="secondary">
+            注意：只有状态为"待处理"的需求可以编辑和删除
+          </Typography.Text>
+        </div>
+      </div>
+    </ConfigProvider>
   );
-};
+}
 
 export default INeed;

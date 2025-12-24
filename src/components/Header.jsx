@@ -2,7 +2,7 @@ import React from "react";
 import { Layout, Menu, Avatar, Dropdown } from "antd";
 import { Link, useLocation } from "react-router-dom";
 import antdTheme from "../config/theme";
-import { useUserStore } from "../store/userStore";
+import { useUserStore } from "../store/modules/userStore"
 import { LogoutOutlined, UserOutlined } from "@ant-design/icons";
 
 const { Header } = Layout;

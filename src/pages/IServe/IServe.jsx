@@ -24,10 +24,8 @@ import {
   ExclamationCircleOutlined,
   EyeOutlined,
 } from "@ant-design/icons";
-import ConfigProvider from "antd/es/config-provider";
-import { useDemandStore } from "../../store/demandStore";
-import { useUserStore } from "../../store/userStore";
-import antdTheme from "../../config/theme";
+import { useDemandStore } from "../../store/modules/demandStore";
+import { useUserStore } from "../../store/modules/userStore";
 const { Title } = Typography;
 const { Option } = Select;
 const { Search } = Input;
@@ -41,7 +39,6 @@ const IServe = () => {
   // 从store获取状态和方法
   const {
     myServiceResponses,
-    serviceTypes,
     loading,
     getMyServiceResponses,
     deleteMyServiceResponse,
@@ -49,13 +46,22 @@ const IServe = () => {
 
   // 初始化加载自己的响应列表
   useEffect(() => {
-    if (isLoggedIn && userInfo?.id) {
-      getMyServiceResponses(userInfo.id);
-    } else {
-      // 如果用户未登录，跳转到登录页面
-      message.warning("请先登录查看您的响应");
-      navigate("/login");
-    }
+    const loadMyServiceResponses = async () => {
+      if (isLoggedIn && userInfo?.id) {
+        try {
+          await getMyServiceResponses(userInfo.id);
+        } catch (error) {
+          console.error('加载服务响应失败:', error);
+          message.error('加载服务响应失败，请稍后重试');
+        }
+      } else {
+        // 如果用户未登录，跳转到登录页面
+        message.warning("请先登录查看您的响应");
+        navigate("/login");
+      }
+    };
+    
+    loadMyServiceResponses();
   }, [getMyServiceResponses, isLoggedIn, userInfo?.id, navigate]);
 
   // 处理查看需求详情
@@ -65,7 +71,7 @@ const IServe = () => {
 
   // 处理修改响应
   const handleEditResponse = (response) => {
-    if (response.status === "已接受") {
+    if (response.status === "ACCEPTED") {
       message.warning("已接受的响应无法修改");
       return;
     }
@@ -76,7 +82,7 @@ const IServe = () => {
 
   // 处理删除响应
   const handleDeleteResponse = (responseId, status) => {
-    if (status === "已接受") {
+    if (status === "ACCEPTED") {
       message.warning("已接受的响应无法删除");
       return;
     }
@@ -87,19 +93,18 @@ const IServe = () => {
       okText: "确定",
       okType: "danger",
       cancelText: "取消",
-      onOk() {
-        deleteMyServiceResponse(responseId);
-        message.success("响应删除成功");
+      onOk: async () => {
+        try {
+          await deleteMyServiceResponse(responseId);
+          message.success("响应删除成功");
+        } catch (error) {
+          console.error("删除响应失败:", error);
+          message.error("删除失败，请稍后重试");
+        }
       },
     });
   };
 
-  // 状态标签颜色映射
-  const statusColorMap = {
-    待审核: "blue",
-    已接受: "green",
-    已拒绝: "red",
-  };
 
   // 表格列定义
   const columns = [
@@ -121,32 +126,15 @@ const IServe = () => {
         </Space>
       ),
     },
+    
     {
-      title: "服务类型",
-      dataIndex: "serviceType",
-      key: "serviceType",
-      ellipsis: true,
-      width: 120,
-      render: (type) => <Tag color="default">{type}</Tag>,
-    },
-    {
-      title: "需求状态",
-      dataIndex: "demandStatus",
-      key: "demandStatus",
-      ellipsis: true,
-      width: 100,
-      render: (status) => (
-        <Tag color={statusColorMap[status] || "default"}>{status}</Tag>
-      ),
-    },
-    {
-      title: "我的响应状态",
+      title: "状态",
       dataIndex: "status",
       key: "status",
       ellipsis: true,
       width: 120,
       render: (status) => (
-        <Tag color={statusColorMap[status] || "default"}>{status}</Tag>
+        <Tag color="default" style={{ backgroundColor: '#f0f0f0' }}>{status}</Tag>
       ),
     },
     {
@@ -171,20 +159,37 @@ const IServe = () => {
       width: 150,
       render: (_, record) => (
         <Space size="middle">
-          {record.status !== "已接受" && (
+          {record.status !== "ACCEPTED" && (
             <>
               <Button
                 type="primary"
                 icon={<EditOutlined />}
                 size="small"
+                style={{
+                  height: 32,
+                  backgroundColor: '#1890ff',
+                  color: '#ffffff',
+                  fontSize: 14,
+                  borderRadius: 8,
+                  lineHeight: "32px",
+                  marginRight: 8,
+                }}
                 onClick={() => handleEditResponse(record)}
               >
                 修改
               </Button>
               <Button
-                type="danger"
+                type="primary"
                 icon={<DeleteOutlined />}
                 size="small"
+                style={{
+                  height: 32,
+                  backgroundColor: '#ff4d4f',
+                  color: '#ffffff',
+                  fontSize: 14,
+                  borderRadius: 8,
+                  lineHeight: "32px",
+                }}
                 onClick={() => handleDeleteResponse(record.id, record.status)}
               >
                 删除
@@ -200,13 +205,13 @@ const IServe = () => {
   const statistics = {
     total: myServiceResponses?.length || 0,
     pending: (
-      myServiceResponses?.filter((resp) => resp.status === "待审核") || []
+      myServiceResponses?.filter((resp) => resp.status === "PENDING") || []
     ).length,
     accepted: (
-      myServiceResponses?.filter((resp) => resp.status === "已接受") || []
+      myServiceResponses?.filter((resp) => resp.status === "ACCEPTED") || []
     ).length,
     rejected: (
-      myServiceResponses?.filter((resp) => resp.status === "已拒绝") || []
+      myServiceResponses?.filter((resp) => resp.status === "REJECTED") || []
     ).length,
   };
 
@@ -274,6 +279,10 @@ const IServe = () => {
                 pageSizeOptions: ["10", "20", "50"],
               }}
               scroll={{ x: 1200 }}
+              style={{
+                backgroundColor: '#f5f5f5'
+              }}
+              rowClassName={() => 'response-table-row'}
             />
           ) : (
             <div style={{ textAlign: "center", padding: "40px" }}>

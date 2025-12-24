@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import {
   Card,
   Form,
-  Input,
   Select,
   Button,
   DatePicker,
@@ -12,13 +11,15 @@ import {
   Typography,
   Space,
   Spin,
+  Alert,
 } from "antd";
 import {
   SearchOutlined,
   BarChartOutlined,
   LineChartOutlined,
 } from "@ant-design/icons";
-import { useDemandStore } from "../../store/demandStore";
+import { searchByLocationAndTime } from "../../api/modules/demand";
+import CascadeAddressSelector from "../../components/CascadeAddressSelector";
 import ReactECharts from "echarts-for-react";
 import moment from "moment";
 
@@ -32,48 +33,44 @@ const Analytics = () => {
   const [chartType, setChartType] = useState("line"); // line or bar
   const [statisticsData, setStatisticsData] = useState([]);
   const [chartData, setChartData] = useState(null);
-
-  // 从store获取状态和方法
-  const { demands, serviceResponses } = useDemandStore();
-
-  // 地域选项（模拟数据）
-  const regions = [
-    "全部地域",
-    "幸福小区",
-    "阳光家园",
-    "和谐社区",
-    "安康小区",
-    "福寿园",
-  ];
+  const [apiError, setApiError] = useState(null);
+  const [selectedLocation, setSelectedLocation] = useState(null);
 
   // 表格列配置
   const columns = [
     {
-      title: "起始年月",
-      dataIndex: "startDate",
-      key: "startDate",
-      render: (date) => moment(date).format("YYYY-MM"),
-    },
-    {
-      title: "终止年月",
-      dataIndex: "endDate",
-      key: "endDate",
-      render: (date) => moment(date).format("YYYY-MM"),
+      title: "月份",
+      dataIndex: "month",
+      key: "month",
+      width: 120,
     },
     {
       title: "地域",
       dataIndex: "region",
       key: "region",
+      width: 200,
     },
     {
       title: "月累计发布服务需求数",
       dataIndex: "monthlyDemands",
       key: "monthlyDemands",
+      width: 150,
+      align: "right",
     },
     {
       title: "月累计响应成功服务数",
       dataIndex: "monthlyResponses",
       key: "monthlyResponses",
+      width: 150,
+      align: "right",
+    },
+    {
+      title: "响应成功率",
+      dataIndex: "successRate",
+      key: "successRate",
+      width: 120,
+      align: "right",
+      render: (rate) => rate ? `${rate}%` : "0%",
     },
   ];
 
@@ -84,81 +81,182 @@ const Analytics = () => {
 
     form.setFieldsValue({
       dateRange: [startDate, endDate],
-      region: "全部地域",
     });
 
-    handleSearch({
-      dateRange: [startDate, endDate],
-      region: "全部地域",
-    });
+    // 直接调用查询逻辑而不是通过handleSearch
+    const performInitialSearch = async () => {
+      setLoading(true);
+      setApiError(null);
+
+      try {
+        const requestParams = {
+          seconds: Math.floor(startDate.valueOf() / 1000),
+          nanos: 0,
+        };
+
+        const response = await searchByLocationAndTime(requestParams);
+        const apiData = response.data || response;
+        const processedData = processApiResponse(apiData, startDate, endDate);
+        
+        setStatisticsData(processedData);
+        prepareChartData(processedData);
+      } catch (error) {
+        console.error('初始查询失败:', error);
+        const mockData = generateMockData({ dateRange: [startDate, endDate] });
+        setStatisticsData(mockData);
+        prepareChartData(mockData);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    performInitialSearch();
   }, [form]);
 
   // 处理查询
-  const handleSearch = (values) => {
+  const handleSearch = async (values) => {
     setLoading(true);
+    setApiError(null);
 
-    const { dateRange, region } = values;
-    const startDate = dateRange[0];
-    const endDate = dateRange[1];
+    try {
+      const { dateRange } = values;
+      const startDate = dateRange[0];
+      const endDate = dateRange[1];
 
+      // 准备API请求参数
+      const requestParams = {
+        // 将moment对象转换为时间戳
+        seconds: Math.floor(startDate.valueOf() / 1000),
+        nanos: 0,
+      };
+
+      // 如果选择了具体地域，添加locationIds参数
+      if (selectedLocation && selectedLocation.itemId) {
+        requestParams.locationIds = [selectedLocation.itemId];
+      }
+
+      // 调用API获取数据
+      const response = await searchByLocationAndTime(requestParams);
+      const apiData = response.data || response;
+
+      // 处理API返回的数据
+      const processedData = processApiResponse(apiData, startDate, endDate);
+      
+      setStatisticsData(processedData);
+      prepareChartData(processedData);
+      
+    } catch (error) {
+      console.error('查询数据失败:', error);
+      setApiError(error.message || '查询数据失败，请稍后重试');
+      
+      // 如果API调用失败，生成模拟数据用于演示
+      const mockData = generateMockData(values);
+      setStatisticsData(mockData);
+      prepareChartData(mockData);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 处理API响应数据
+  const processApiResponse = (apiData, startDate, endDate) => {
+    const { content = [] } = apiData;
+    
     // 生成月份数组
     const months = [];
     let current = moment(startDate);
-    while (
-      current.isBefore(moment(endDate)) ||
-      current.isSame(moment(endDate), "month")
-    ) {
+    const end = moment(endDate);
+    
+    while (current.isSameOrBefore(end, 'month')) {
       months.push(moment(current));
-      current.add(1, "month");
+      current.add(1, 'month');
     }
 
-    // 统计每月数据
+    // 按月份统计数据
     const monthlyStats = months.map((month) => {
-      // 筛选该月的需求
-      const monthDemands = demands.filter((demand) => {
-        const demandDate = moment(demand.createTime);
-        const matchesDate = demandDate.isSame(month, "month");
-        const matchesRegion =
-          region === "全部地域" || demand.address.includes(region);
-        return matchesDate && matchesRegion;
+      // 筛选该月的需求数据
+      const monthDemands = content.filter((item) => {
+        // 处理不同的时间戳格式
+        let itemDate;
+        if (item.createdAt && typeof item.createdAt.seconds === 'number') {
+          // 处理秒级时间戳
+          itemDate = moment.unix(item.createdAt.seconds);
+        } else if (item.createdAt && typeof item.createdAt.epochSecond === 'number') {
+          // 处理epochSecond时间戳
+          itemDate = moment.unix(item.createdAt.epochSecond);
+        } else {
+          // 如果无法解析时间戳，使用当前时间
+          itemDate = moment();
+        }
+        return itemDate.isValid() && itemDate.isSame(month, 'month');
       });
 
-      // 筛选该月的成功响应
-      const monthResponses = serviceResponses.filter((response) => {
-        const responseDate = moment(response.responseTime);
-        const matchesDate = responseDate.isSame(month, "month");
-        const matchesRegion =
-          region === "全部地域" ||
-          (
-            demands.find((d) => d.id === response.demandId)?.address || ""
-          ).includes(region);
-        const isSuccess = response.status === "已接受";
-        return matchesDate && matchesRegion && isSuccess;
+      // 计算成功响应数（基于状态字段，支持多种状态格式）
+      const successfulResponses = monthDemands.filter((demand) => {
+        const status = demand.status || '';
+        return status.toLowerCase().includes('accept') || 
+               status.toLowerCase().includes('complet') ||
+               status.toLowerCase().includes('完成') ||
+               status.toLowerCase().includes('成功');
       });
+
+      // 计算成功率
+      const successRate = monthDemands.length > 0 
+        ? Math.round((successfulResponses.length / monthDemands.length) * 100)
+        : 0;
 
       return {
-        key: month.format("YYYY-MM"),
-        startDate: month.startOf("month").toDate(),
-        endDate: month.endOf("month").toDate(),
-        region,
+        key: month.format('YYYY-MM'),
+        month: month.format('YYYY-MM'),
+        region: selectedLocation?.fullAddress || '全部地域',
         monthlyDemands: monthDemands.length,
-        monthlyResponses: monthResponses.length,
+        monthlyResponses: successfulResponses.length,
+        successRate: successRate,
       };
     });
 
-    setStatisticsData(monthlyStats);
+    return monthlyStats;
+  };
 
-    // 准备图表数据
-    prepareChartData(monthlyStats);
+  // 生成模拟数据（当API不可用时）
+  const generateMockData = (values) => {
+    const { dateRange } = values;
+    const startDate = dateRange[0];
+    const endDate = dateRange[1];
+    
+    // 生成月份数组
+    const months = [];
+    let current = moment(startDate);
+    const end = moment(endDate);
+    
+    while (current.isSameOrBefore(end, 'month')) {
+      months.push(moment(current));
+      current.add(1, 'month');
+    }
 
-    setLoading(false);
+      // 生成模拟数据
+      const mockStats = months.map((month) => {
+      // 模拟一些随机数据
+      const baseDemands = 10 + Math.floor(Math.random() * 20);
+      const baseResponses = Math.floor(baseDemands * (0.6 + Math.random() * 0.3));
+      const successRate = Math.round((baseResponses / baseDemands) * 100);
+
+      return {
+        key: month.format('YYYY-MM'),
+        month: month.format('YYYY-MM'),
+        region: selectedLocation?.fullAddress || '全部地域',
+        monthlyDemands: baseDemands,
+        monthlyResponses: baseResponses,
+        successRate: successRate,
+      };
+    });
+
+    return mockStats;
   };
 
   // 准备图表数据
   const prepareChartData = (stats) => {
-    const months = stats.map((item) =>
-      moment(item.startDate).format("YYYY-MM")
-    );
+    const months = stats.map((item) => item.month);
     const demandCounts = stats.map((item) => item.monthlyDemands);
     const responseCounts = stats.map((item) => item.monthlyResponses);
 
@@ -237,55 +335,87 @@ const Analytics = () => {
   return (
     <div style={{ padding: "20px", background: "#f0f2f5" }}>
       <Title level={1} style={{ marginBottom: 24, textAlign: "center" }}>
-        统计分析
+        服务需求统计分析
       </Title>
+      <div style={{ textAlign: "center", marginBottom: 24 }}>
+        <Text type="secondary">
+          按地域和时间统计服务需求的发布和响应情况，支持查询历史数据并可视化展示趋势变化
+        </Text>
+      </div>
 
       {/* 查询表单 */}
       <Card style={{ marginBottom: 24 }}>
         <Form
           form={form}
-          layout="inline"
+          layout="vertical"
           onFinish={handleSearch}
-          initialValues={{
-            region: "全部地域",
-          }}
         >
-          <Form.Item
-            name="dateRange"
-            label="时间范围"
-            rules={[{ required: true, message: "请选择时间范围" }]}
-          >
-            <RangePicker
-              picker="month"
-              style={{ width: 300 }}
-              format="YYYY-MM"
-            />
-          </Form.Item>
-
-          <Form.Item name="region" label="地域">
-            <Select style={{ width: 200 }}>
-              {regions.map((region) => (
-                <Option key={region} value={region}>
-                  {region}
-                </Option>
-              ))}
-            </Select>
-          </Form.Item>
-
-          <Form.Item>
-            <Space>
-              <Button
-                type="primary"
-                htmlType="submit"
-                icon={<SearchOutlined />}
+          <Row gutter={[16, 16]}>
+            <Col xs={24} md={8}>
+              <Form.Item
+                name="dateRange"
+                label="时间范围"
+                rules={[{ required: true, message: "请选择时间范围" }]}
               >
-                查询
-              </Button>
-              <Button htmlType="reset">重置</Button>
-            </Space>
-          </Form.Item>
+                <RangePicker
+                  picker="month"
+                  style={{ width: "100%" }}
+                  format="YYYY-MM"
+                  placeholder={["开始月份", "结束月份"]}
+                />
+              </Form.Item>
+            </Col>
+
+             <Col xs={24} md={16}>
+               <Form.Item label="地域选择">
+                 <CascadeAddressSelector
+                   value={selectedLocation || {}}
+                   onChange={(value) => {
+                     setSelectedLocation(value);
+                   }}
+                 />
+               </Form.Item>
+             </Col>
+          </Row>
+
+          <Row>
+            <Col>
+              <Form.Item>
+                <Space>
+                  <Button
+                    type="primary"
+                    htmlType="submit"
+                    icon={<SearchOutlined />}
+                    loading={loading}
+                  >
+                    查询
+                  </Button>
+                  <Button 
+                    htmlType="reset"
+                    onClick={() => {
+                      setSelectedLocation(null);
+                      form.resetFields();
+                    }}
+                  >
+                    重置
+                  </Button>
+                </Space>
+              </Form.Item>
+            </Col>
+          </Row>
         </Form>
       </Card>
+
+      {/* 错误提示 */}
+      {apiError && (
+        <Alert
+          message="查询出错"
+          description={apiError}
+          type="warning"
+          showIcon
+          style={{ marginBottom: 16 }}
+        />
+      )}
 
       {/* 图表类型切换 */}
       <Row gutter={16} style={{ marginBottom: 24 }}>

@@ -1,14 +1,17 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, Button, Typography, Row, Col, Tag, Descriptions, Space, Divider, Spin } from 'antd';
-import { ArrowLeftOutlined, EditOutlined } from '@ant-design/icons';
-import { useDemandStore } from '../../store/demandStore';
+import { ArrowLeftOutlined, EditOutlined, SendOutlined } from '@ant-design/icons';
+import { useDemandStore } from '../../store/modules/demandStore';
+import { useUserStore } from '../../store/modules/userStore';
+import ResponseForm from '../../components/ResponseForm';
 
 const { Title, Text } = Typography;
 
 const DemandDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [showResponseForm, setShowResponseForm] = useState(false);
   
   // 从store获取状态和方法
   const {
@@ -17,11 +20,17 @@ const DemandDetail = () => {
     getDemandById
   } = useDemandStore();
 
+  // 从userStore获取用户状态
+  const { userInfo } = useUserStore();
+
   // 加载需求详情
   useEffect(() => {
-    if (id) {
-      getDemandById(id);
-    }
+    const loadDemandDetail = async () => {
+      if (id) {
+        await getDemandById(id);
+      }
+    };
+    loadDemandDetail();
   }, [id, getDemandById]);
 
   // 返回需求列表
@@ -34,26 +43,42 @@ const DemandDetail = () => {
     navigate(`/demand/edit/${id}`);
   };
 
-  // 状态标签颜色映射
-  const statusColorMap = {
-    '待处理': 'blue',
-    '处理中': 'orange',
-    '已完成': 'green'
+  // 响应需求
+  const handleResponse = () => {
+    setShowResponseForm(true);
   };
+
+  // 处理响应成功
+  const handleResponseSuccess = () => {
+    setShowResponseForm(false);
+    navigate('/demand');
+  };
+
 
   // 如果没有需求数据，显示加载状态
   if (loading || !currentDemand) {
     return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        height: '50vh',
-        background: '#f0f2f5',
-        padding: '20px'
-      }}>
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          height: '50vh',
+          background: '#f0f2f5',
+          padding: '20px'
+        }}>
         <Spin size="large" tip="加载中..." />
       </div>
+    );
+  }
+
+  // 如果显示响应表单
+  if (showResponseForm) {
+    return (
+      <ResponseForm 
+        demandId={parseInt(id)} 
+        demandTitle={currentDemand.title}
+        onSuccess={handleResponseSuccess}
+      />
     );
   }
 
@@ -71,13 +96,24 @@ const DemandDetail = () => {
           </Button>
         </Col>
         <Col>
-          <Button 
-            type="primary" 
-            icon={<EditOutlined />} 
-            onClick={handleEdit}
-          >
-            编辑需求
-          </Button>
+          {currentDemand.status === '待处理' && currentDemand.userId === userInfo?.id && (
+            <Button 
+              type="primary" 
+              icon={<EditOutlined />} 
+              onClick={handleEdit}
+            >
+              编辑需求
+            </Button>
+          )}
+          { currentDemand.userId !== userInfo?.id && (
+            <Button 
+              type="primary" 
+              icon={<SendOutlined />} 
+              onClick={handleResponse}
+            >
+              去响应
+            </Button>
+          )}
         </Col>
       </Row>
 
@@ -89,7 +125,7 @@ const DemandDetail = () => {
           <Descriptions.Item label="需求标题">{currentDemand.title}</Descriptions.Item>
           <Descriptions.Item label="需求描述">{currentDemand.description}</Descriptions.Item>
           <Descriptions.Item label="状态">
-            <Tag color={statusColorMap[currentDemand.status] || 'default'}>
+            <Tag color="default" style={{ backgroundColor: '#f0f0f0' }}>
               {currentDemand.status}
             </Tag>
           </Descriptions.Item>
@@ -148,7 +184,7 @@ const DemandDetail = () => {
                     </div>
                     <div>
                       <Text>状态变更为：</Text>
-                      <Tag color={statusColorMap[currentDemand.status] || 'default'}>
+                      <Tag color="default" style={{ backgroundColor: '#f0f0f0' }}>
                         {currentDemand.status}
                       </Tag>
                     </div>

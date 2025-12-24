@@ -12,6 +12,7 @@ const DemandDetail = React.lazy(() => import("../pages/Demand/DemandDetail"));
 const DemandForm = React.lazy(() => import("../pages/Demand/DemandForm"));
 // 我需要模块相关路由
 const INeed = React.lazy(() => import("../pages/INeed/INeed"));
+const INeedDetail = React.lazy(() => import("../pages/INeed/INeedDetail"));
 const INeedForm = React.lazy(() => import("../pages/INeed/INeedForm"));
 // 我服务模块相关路由
 const IServe = React.lazy(() => import("../pages/IServe/IServe"));
@@ -77,6 +78,14 @@ export const router = createBrowserRouter([
         element: (
           <React.Suspense fallback={<div>Loading...</div>}>
             <INeed />
+          </React.Suspense>
+        ),
+      },
+      {
+        path: "i-need/:id",
+        element: (
+          <React.Suspense fallback={<div>Loading...</div>}>
+            <INeedDetail />
           </React.Suspense>
         ),
       },
