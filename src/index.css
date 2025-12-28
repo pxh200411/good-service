@@ -64,6 +64,27 @@ body {
   /* 默认文字颜色 */
 }
 
+.ant-select-item-option.ant-select-item-option-selected {
+  background-color: var(--primary-color) !important;
+  /* 选中（非悬停）项背景色 */
+  color: #ffffff !important;
+  /* 选中项文字色 */
+}
+
+/* 悬停（未必选中）时的样式 */
+.ant-select-item-option.ant-select-item-option-active {
+  background-color: var(--primary-hover) !important;
+  color: #ffffff !important;
+}
+
+/* 悬停且已选中时，使用和选中一致的主色 */
+.ant-select-item-option.ant-select-item-option-active.ant-select-item-option-selected {
+  background-color: var(--primary-color) !important;
+  color: #ffffff !important;
+}
+
+
+
 .ant-alert.ant-alert-error .ant-alert-message,
 .ant-alert.ant-alert-error .ant-alert-description {
   color: #a94442 !important;
@@ -73,6 +94,3 @@ body {
   color: #a94442 !important;
   /* 图标颜色 */
 }
-
-/* 如果只想改某个具体实例，可以用更高特异性的 class 选择器，例如：
-   .my-alert .ant-alert.ant-alert-error { ... } */
