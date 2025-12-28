@@ -77,7 +77,7 @@ const INeed = () => {
       
       return locationName;
     } catch (error) {
-      console.error('获取位置信息失败:', error);
+      //console.error('获取位置信息失败:', error);
       return '';
     }
   };
@@ -89,7 +89,7 @@ const INeed = () => {
         try {
           await filterByUserId(userInfo.id);
         } catch (error) {
-          console.error('加载我的需求失败:', error);
+          //console.error('加载我的需求失败:', error);
           message.error('加载我的需求失败，请稍后重试');
         }
       } else {

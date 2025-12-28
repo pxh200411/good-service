@@ -59,6 +59,20 @@ export const getReceivedResponses = () => {
 };
 
 /**
+ * 查询特定需求收到的响应列表
+ * @param {number} demandId - 需求ID
+ * @returns {Promise<Array>} 响应列表，包含ResponseVo对象数组
+ * @description 根据需求ID获取该需求收到的所有响应
+ * ResponseVo包含：id, demandId, userId, title, description, status, createdAt, modifiedAt
+ */
+export const getReceivedResponsesByDemandId = (demandId) => {
+  return request({
+    url: `/responses/received/demands/${demandId}`,
+    method: 'get',
+  });
+};
+
+/**
  * 查询用户接收的响应分页列表
  * @param {Object} params - 分页参数
  * @param {number} params.page - 页码

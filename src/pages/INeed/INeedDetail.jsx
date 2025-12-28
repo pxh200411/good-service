@@ -4,9 +4,10 @@ import { Card, Button, Typography, Row, Col, Tag, Descriptions, Space, Divider, 
 import { ArrowLeftOutlined, EditOutlined, UserOutlined, ClockCircleOutlined, CheckCircleOutlined, EyeOutlined } from '@ant-design/icons';
 import { useDemandStore } from '../../store/modules/demandStore';
 import { useUserStore } from '../../store/modules/userStore';
-import { getReceivedResponses, getResponseById } from '../../api/modules/response';
+import { getReceivedResponsesByDemandId, getResponseById } from '../../api/modules/response';
 import { getLocationById } from '../../api/modules/location';
 import ResponseDetailModal from '../../components/ResponseDetailModal';
+import DemandFileViewer from '../../components/DemandFileViewer';
 import antdTheme from '../../config/theme';
 
 const { Title, Text } = Typography;
@@ -52,13 +53,14 @@ const INeedDetail = () => {
       if (id) {
         setResponsesLoading(true);
         try {
-          const response = await getReceivedResponses();
-          // 过滤出当前需求的响应
-          const currentDemandResponses = response;
-          setReceivedResponses(currentDemandResponses);
+          const response = await getReceivedResponsesByDemandId(id);
+          // 直接使用API返回的响应列表
+          const currentDemandResponses = response.data || response;
+          setReceivedResponses(Array.isArray(currentDemandResponses) ? currentDemandResponses : []);
         } catch (error) {
-          console.error('加载响应失败:', error);
+          //console.error('加载响应失败:', error);
           message.error('加载响应失败，请稍后重试');
+          setReceivedResponses([]);
         } finally {
           setResponsesLoading(false);
         }
@@ -76,7 +78,7 @@ const INeedDetail = () => {
           const name = response.data?.name || response.name || '';
           setLocationName(name);
         } catch (error) {
-          console.error('获取位置信息失败:', error);
+          //console.error('获取位置信息失败:', error);
           setLocationName('');
         }
       } else if (currentDemand && currentDemand.address) {
@@ -107,7 +109,7 @@ const INeedDetail = () => {
       setSelectedResponse(detailedResponse);
       setDetailModalVisible(true);
     } catch (error) {
-      console.error('获取响应详情失败:', error);
+      //console.error('获取响应详情失败:', error);
       message.error('获取响应详情失败，请稍后重试');
     } finally {
       setResponsesLoading(false);
@@ -130,6 +132,22 @@ const INeedDetail = () => {
     'IMPLICITLY_REJECTED': 'orange',
     'CANCELLED': 'gray',
     'RESOLVED': 'purple'
+  };
+
+  // 格式化时间显示
+  const formatDateTime = (dateTimeStr) => {
+    if (!dateTimeStr) return '暂无时间';
+    try {
+      return new Date(dateTimeStr).toLocaleString('zh-CN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (error) {
+      return dateTimeStr;
+    }
   };
 
   // 如果没有需求数据，显示加载状态
@@ -195,6 +213,12 @@ const INeedDetail = () => {
         </Descriptions>
       </Card>
 
+      {/* 需求文件预览 */}
+      <DemandFileViewer 
+        demandId={currentDemand.id} 
+        title="需求附件"
+      />
+
       {/* 收到的响应列表 */}
       <Card 
         title={`收到的响应 (${receivedResponses.length})`} 
@@ -218,39 +242,41 @@ const INeedDetail = () => {
                         title={
                           <Space>
                             <Text strong>{response.title}</Text>
-                            {response.providerName && (
-                              <Text type="secondary">by {response.providerName}</Text>
-                            )}
+                            <Text type="secondary">响应ID: {response.id}</Text>
                           </Space>
                         }
                         description={response.description}
                       />
-                      {response.price && (
-                        <div style={{ marginTop: 8 }}>
-                          <Text strong>报价：</Text>
-                          <Text type="danger" strong>¥{response.price}</Text>
-                        </div>
-                      )}
-                      {response.estimatedTime && (
-                        <div style={{ marginTop: 4 }}>
-                          <ClockCircleOutlined style={{ marginRight: 4 }} />
-                          <Text type="secondary">预计完成时间：{response.estimatedTime}</Text>
-                        </div>
-                      )}
-                      {response.status === '已完成' && (
-                        <div style={{ marginTop: 4 }}>
-                          <CheckCircleOutlined style={{ marginRight: 4, color: '#52c41a' }} />
-                          <Text type="success">已完成</Text>
-                        </div>
-                      )}
+                      <div style={{ marginTop: 8 }}>
+                        <Space direction="vertical" size="small">
+                          <div>
+                            <Text type="secondary">需求ID: </Text>
+                            <Text>{response.demandId}</Text>
+                          </div>
+                          <div>
+                            <Text type="secondary">响应者ID: </Text>
+                            <Text>{response.userId}</Text>
+                          </div>
+                          <div>
+                            <Text type="secondary">创建时间: </Text>
+                            <Text>{formatDateTime(response.createdAt)}</Text>
+                          </div>
+                          {response.modifiedAt && response.modifiedAt !== response.createdAt && (
+                            <div>
+                              <Text type="secondary">修改时间: </Text>
+                              <Text>{formatDateTime(response.modifiedAt)}</Text>
+                            </div>
+                          )}
+                        </Space>
+                      </div>
                     </Col>
                     <Col>
                       <Space direction="vertical" align="end">
-                        <Tag color="default" style={{ backgroundColor: '#ffffff' }}>
-                          {response.status || 'PUBLISHED'}
+                        <Tag color={responseStatusColorMap[response.status] || 'default'}>
+                          {response.status || 'UNKNOWN'}
                         </Tag>
                         <Text type="secondary" style={{ fontSize: '12px' }}>
-                          {response.createdAt}
+                          {formatDateTime(response.createdAt)}
                         </Text>
                         <Button
                           type="default"

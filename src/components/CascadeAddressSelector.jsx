@@ -30,7 +30,7 @@ const CascadeAddressSelector = ({ value = {}, onChange }) => {
           setProvinces(response);
         }
       } catch (error) {
-        console.error('加载省份列表失败:', error);
+        //console.error('加载省份列表失败:', error);
       } finally {
         setLoading(prev => ({ ...prev, provinces: false }));
       }
@@ -49,7 +49,7 @@ const CascadeAddressSelector = ({ value = {}, onChange }) => {
             setCities(response);
           }
         } catch (error) {
-          console.error('加载城市列表失败:', error);
+          //console.error('加载城市列表失败:', error);
         } finally {
           setLoading(prev => ({ ...prev, cities: false }));
         }
@@ -73,7 +73,7 @@ const CascadeAddressSelector = ({ value = {}, onChange }) => {
             setItems(response);
           }
         } catch (error) {
-          console.error('加载区县列表失败:', error);
+          //console.error('加载区县列表失败:', error);
         } finally {
           setLoading(prev => ({ ...prev, items: false }));
         }

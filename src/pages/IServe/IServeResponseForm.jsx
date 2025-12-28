@@ -129,24 +129,24 @@ const IServeResponseForm = () => {
         // 修改响应
         try {
           await updateServiceResponse(response.id, responseData);
-          console.log('响应更新成功');
+          //console.log('响应更新成功');
           
           // 处理文件上传/替换
           if (selectedFile) {
-            console.log('[DEBUG] IServeResponseForm: starting file upload for response:', response.id);
+            //console.log('[DEBUG] IServeResponseForm: starting file upload for response:', response.id);
             setFileUploading(true);
             
             try {
               // 尝试替换文件，如果不存在则自动上传新文件
               const fileResult = await replaceResponseFile(response.id, selectedFile, {
                 onProgress: (progress) => {
-                  console.log('[DEBUG] IServeResponseForm: file upload progress:', progress + '%');
+                  //console.log('[DEBUG] IServeResponseForm: file upload progress:', progress + '%');
                 }
               });
-              console.log('[DEBUG] IServeResponseForm: file upload completed:', fileResult);
+              //console.log('[DEBUG] IServeResponseForm: file upload completed:', fileResult);
               message.success('响应更新成功，文件已更新');
             } catch (fileError) {
-              console.error('[DEBUG] IServeResponseForm: file operation failed:', fileError);
+              //console.error('[DEBUG] IServeResponseForm: file operation failed:', fileError);
               message.warning('响应更新成功，但文件操作失败，请稍后重试');
             } finally {
               setFileUploading(false);
@@ -165,30 +165,30 @@ const IServeResponseForm = () => {
           navigate("/i-serve");
           
         } catch (error) {
-          console.error('更新响应失败:', error);
+          //console.error('更新响应失败:', error);
           message.error('更新响应失败，请重试');
         }
       } else {
         // 创建新响应
         try {
           const responseResult = await createServiceResponse(responseData);
-          console.log('响应提交成功:', responseResult);
+          //console.log('响应提交成功:', responseResult);
           
           // 处理文件上传
           if (selectedFile) {
-            console.log('[DEBUG] IServeResponseForm: starting file upload for new response:', responseResult.id);
+            //console.log('[DEBUG] IServeResponseForm: starting file upload for new response:', responseResult.id);
             setFileUploading(true);
             
             try {
               const fileResult = await uploadResponseFile(responseResult.id, selectedFile, {
                 onProgress: (progress) => {
-                  console.log('[DEBUG] IServeResponseForm: file upload progress:', progress + '%');
+                  //console.log('[DEBUG] IServeResponseForm: file upload progress:', progress + '%');
                 }
               });
-              console.log('[DEBUG] IServeResponseForm: file upload completed:', fileResult);
+              //console.log('[DEBUG] IServeResponseForm: file upload completed:', fileResult);
               message.success('响应提交成功，文件已上传');
             } catch (fileError) {
-              console.error('[DEBUG] IServeResponseForm: file upload failed:', fileError);
+              //console.error('[DEBUG] IServeResponseForm: file upload failed:', fileError);
               message.warning('响应提交成功，但文件上传失败，请稍后重试');
             } finally {
               setFileUploading(false);
@@ -204,16 +204,16 @@ const IServeResponseForm = () => {
           navigate("/i-serve");
           
         } catch (error) {
-          console.error('提交响应失败:', error);
+          //console.error('提交响应失败:', error);
           message.error('提交响应失败，请重试');
         }
       }
     } catch (errorInfo) {
       if (errorInfo.errorFields) {
-        console.log("表单验证失败:", errorInfo);
+        //console.log("表单验证失败:", errorInfo);
         message.error("表单验证失败，请检查填写内容");
       } else {
-        console.log("响应操作失败:", errorInfo);
+        //console.log("响应操作失败:", errorInfo);
         message.error("操作失败，请稍后重试");
       }
     }

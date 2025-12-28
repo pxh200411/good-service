@@ -46,7 +46,7 @@ export const getItems = (cityId) => {
  * @returns {Promise} 搜索结果
  */
 export const searchLocations = (keyword) => {
-  console.log('搜索关键词:', keyword);
+  //console.log('搜索关键词:', keyword);
   
   // 使用原生fetch API来完全控制URL格式
   const baseURL = process.env.NODE_ENV === 'development' 
@@ -54,7 +54,7 @@ export const searchLocations = (keyword) => {
     : "/api";
   
   const url = `${baseURL}/locations/search?keyword=${keyword}`;
-  console.log('完整请求URL:', url);
+  //console.log('完整请求URL:', url);
   
   return fetch(url, {
     method: 'GET',

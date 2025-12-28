@@ -17,7 +17,7 @@ export const getUserInfo = () => {
       return userData?.state?.userInfo || null;
     }
   } catch (error) {
-    console.warn('解析用户存储数据失败:', error);
+    //console.warn('解析用户存储数据失败:', error);
   }
   return null;
 };

@@ -33,7 +33,7 @@ const processApiData = (apiData, serviceTypeMap = {}, locationMap = {}) => {
           return new Date(timestamp * 1000);
         }
       }
-      console.warn('无法解析时间戳:', timestamp, '返回当前时间');
+      //console.warn('无法解析时间戳:', timestamp, '返回当前时间');
       return new Date(); // 如果所有格式都无法解析，返回当前时间（作为最后的回退）
     };
     
@@ -69,6 +69,11 @@ const processApiData = (apiData, serviceTypeMap = {}, locationMap = {}) => {
       createTime: convertTimestamp(item.createdAt)?.toISOString() || null,
       updateTime: convertTimestamp(item.modifiedAt)?.toISOString() || null,
       address: finalLocationMap[item.locationId] || "地址未知",
+      locationName: item.locationName || finalLocationMap[item.locationId] || "地址未知",
+      locationId: item.locationId,
+      serviceId: item.serviceId,
+      startTime: item.startTime,
+      endTime: item.endTime,
       // 保留原始API数据
       originalData: item
     };
@@ -88,7 +93,7 @@ export const useDemandStore = create(
       searchKeyword: "",
       pagination: {
         current: 1,
-        pageSize: 10,
+        pageSize: 3,
         total: 0,
       },
       serviceTypes: null,
@@ -108,12 +113,18 @@ export const useDemandStore = create(
           set({ 
             demands: processedData,
             filteredDemands: processedData,
+            pagination: {
+              ...get().pagination,
+              total: processedData.length,
+              current: 1,
+              pageSize: 3, // 确保页面大小为3
+            },
             loading: false 
           });
           
           return processedData;
         } catch (error) {
-          console.error('获取需求列表失败:', error);
+          //console.error('获取需求列表失败:', error);
           set({ 
             error: error.message || '获取需求列表失败',
             loading: false 
@@ -122,7 +133,16 @@ export const useDemandStore = create(
       },
       // 获取所有需求（本地数据）
       getAllDemands: () => {
-        set({ filteredDemands: get().demands });
+        const { demands } = get();
+        set({ 
+          filteredDemands: demands,
+          pagination: {
+            ...get().pagination,
+            total: demands?.length || 0,
+            current: 1,
+            pageSize: 3, // 确保页面大小为3
+          }
+        });
       },
 
       // 获取所有服务类型（从API）
@@ -147,7 +167,7 @@ export const useDemandStore = create(
           
           return processedTypes;
         } catch (error) {
-          console.error('获取服务类型失败:', error);
+          //console.error('获取服务类型失败:', error);
           // 如果API调用失败，使用模拟数据
           set({ serviceTypes: serviceTypes });
         }
@@ -177,6 +197,7 @@ export const useDemandStore = create(
             ...get().pagination,
             total: filtered.length,
             current: 1,
+            pageSize: 3, // 确保页面大小为3
           },
         });
       },
@@ -214,13 +235,14 @@ export const useDemandStore = create(
               ...get().pagination,
               total: filtered.length,
               current: 1,
+              pageSize: 3, // 确保页面大小为3
             },
             loading: false
           });
           
           return filtered;
         } catch (error) {
-          console.error('获取我的需求失败:', error);
+          //console.error('获取我的需求失败:', error);
           set({ 
             error: error.message || '获取我的需求失败',
             loading: false,
@@ -257,6 +279,7 @@ export const useDemandStore = create(
               ...get().pagination,
               total: filtered.length,
               current: 1,
+              pageSize: 3, // 确保页面大小为3
             },
           });
           
@@ -289,6 +312,7 @@ export const useDemandStore = create(
             ...get().pagination,
             total: filtered.length,
             current: 1,
+            pageSize: 3, // 确保页面大小为3
           },
         });
       },
@@ -336,7 +360,7 @@ export const useDemandStore = create(
           return demand;
           
         } catch (error) {
-          console.error('获取需求详情失败:', error);
+          //console.error('获取需求详情失败:', error);
           set({ 
             error: error.message || '获取需求详情失败',
             loading: false 
@@ -364,7 +388,7 @@ export const useDemandStore = create(
                 locationId = locations[0].id; // 使用第一个匹配结果的ID
               }
             } catch (locationError) {
-              console.warn('地址搜索失败，使用默认locationId:', locationError);
+              //console.warn('地址搜索失败，使用默认locationId:', locationError);
               // 使用默认的locationId映射
               locationId = get().getLocationIdFromAddress(demandData.address);
             }
@@ -396,7 +420,7 @@ export const useDemandStore = create(
           return newDemand;
           
         } catch (error) {
-          console.error('创建需求失败:', error);
+          //console.error('创建需求失败:', error);
           set({ 
             error: error.message || '创建需求失败',
             loading: false 
@@ -442,7 +466,7 @@ export const useDemandStore = create(
                 locationId = get().getLocationIdFromAddress(updateData.address);
               }
             } catch (locationError) {
-              console.warn('地址搜索失败，使用默认locationId:', locationError);
+              //console.warn('地址搜索失败，使用默认locationId:', locationError);
               // 使用默认的locationId映射
               locationId = get().getLocationIdFromAddress(updateData.address);
             }
@@ -482,7 +506,7 @@ export const useDemandStore = create(
           return updatedDemand;
           
         } catch (error) {
-          console.error('更新需求失败:', error);
+          //console.error('更新需求失败:', error);
           set({ 
             error: error.message || '更新需求失败',
             loading: false 
@@ -581,7 +605,11 @@ export const useDemandStore = create(
         set({
           filterType: "all",
           searchKeyword: "",
-          pagination: { ...get().pagination, current: 1 },
+          pagination: { 
+            ...get().pagination, 
+            current: 1,
+            pageSize: 3 // 确保页面大小为3
+          },
         });
         get().getAllDemands();
       },
@@ -640,7 +668,7 @@ export const useDemandStore = create(
           
           return responsesWithDemandInfo;
         } catch (error) {
-          console.error('获取我的服务响应失败:', error);
+          //console.error('获取我的服务响应失败:', error);
           set({ 
             error: error.message || '获取我的服务响应失败',
             loading: false,
@@ -699,7 +727,7 @@ export const useDemandStore = create(
 
           return newResponse;
         } catch (error) {
-          console.error('创建响应失败:', error);
+          //console.error('创建响应失败:', error);
           
           // 如果API调用失败，回退到本地创建
           const fallbackResponse = {
@@ -744,7 +772,7 @@ export const useDemandStore = create(
                 }
                 return new Date().toISOString();
               } catch (error) {
-                console.warn('时间转换失败，使用当前时间:', error);
+                //console.warn('时间转换失败，使用当前时间:', error);
                 return new Date().toISOString();
               }
             })(),
@@ -767,7 +795,7 @@ export const useDemandStore = create(
 
           return updatedResponses;
         } catch (error) {
-          console.error('更新响应失败:', error);
+          //console.error('更新响应失败:', error);
           
           // 如果API调用失败，回退到本地更新
           const updatedResponses = responses.map((response) =>
@@ -808,7 +836,7 @@ export const useDemandStore = create(
 
           return updatedResponses;
         } catch (error) {
-          console.error('删除响应失败:', error);
+          //console.error('删除响应失败:', error);
           
           // 如果API调用失败，回退到本地删除
           const updatedResponses = serviceResponses.filter(
@@ -860,7 +888,7 @@ export const useDemandStore = create(
           
           return updatedResponses;
         } catch (error) {
-          console.error('接受响应失败:', error);
+          //console.error('接受响应失败:', error);
           throw error;
         }
       },
@@ -894,7 +922,7 @@ export const useDemandStore = create(
           
           return updatedResponses;
         } catch (error) {
-          console.error('拒绝响应失败:', error);
+          //console.error('拒绝响应失败:', error);
           throw error;
         }
       },

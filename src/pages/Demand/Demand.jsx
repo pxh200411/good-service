@@ -6,7 +6,6 @@ import {
   Card,
   Select,
   Input,
-  Table,
   Button,
   Space,
   Tag,
@@ -16,6 +15,7 @@ import {
   Divider,
   Spin,
   message,
+  Pagination,
 } from "antd";
 import {
   SearchOutlined,
@@ -90,7 +90,7 @@ const Demand = () => {
       
       return locationName;
     } catch (error) {
-      console.error('获取位置信息失败:', error);
+      //console.error('获取位置信息失败:', error);
       return '';
     }
   };
@@ -165,18 +165,6 @@ const Demand = () => {
     RESPONDED: "orange",    // 已响应 - 橙色
     RESOLVED: "green",     // 已完成 - 绿色
     CANCELLED: "gray",                       // 已取消 - 灰色
-  };
-
-  // 分页配置
-  const paginationConfig = {
-    current: pagination.current,
-    pageSize: pagination.pageSize,
-    total: pagination.total,
-    onChange: handlePageChange,
-    showSizeChanger: true,
-    pageSizeOptions: ["10", "20", "50", "100"],
-    showTotal: (total, range) =>
-      `第 ${range[0]}-${range[1]} 条，共 ${total} 条`,
   };
 
   return (
@@ -314,8 +302,10 @@ const Demand = () => {
           <Spin spinning={loading} tip="加载中...">
             {filteredDemands && filteredDemands.length > 0 ? (
               <Row gutter={[16, 16]}>
-                {filteredDemands.map((demand) => (
-                  <Col key={demand.id} xs={24} sm={12} md={8} lg={8} xl={6}>
+                {filteredDemands
+                  .slice((pagination.current - 1) * pagination.pageSize, pagination.current * pagination.pageSize)
+                  .map((demand) => (
+                  <Col key={demand.id} xs={24} sm={12} md={8} lg={8} xl={8} xxl={8}>
                     <Card
                       hoverable
                       title={
@@ -354,6 +344,7 @@ const Demand = () => {
                         height: "100%",
                         display: "flex",
                         flexDirection: "column",
+                        minHeight: "400px", // 增加最小高度
                       }}
                     >
                       <div style={{ marginBottom: 8 }}>
@@ -363,13 +354,7 @@ const Demand = () => {
                         <strong>需求描述:</strong> {demand.description}
                       </div>
                       <div style={{ marginBottom: 8 }}>
-                        <strong>地址:</strong> {
-                          demand.locationId ? (
-                            locationCache[demand.locationId] || '加载中...'
-                          ) : (
-                            demand.address || '暂无地址'
-                          )
-                        }
+                        <strong>地址:</strong> {demand.locationName || demand.address || '暂无地址'}
                       </div>
                       <div
                         style={{
@@ -434,25 +419,16 @@ const Demand = () => {
             )}
             {/* 分页 */}
             <div style={{ marginTop: 20, textAlign: "center" }}>
-              <div style={{ display: "inline-block" }}>
-                <Table
-                  pagination={paginationConfig}
-                  dataSource={[]}
-                  columns={[]}
-                  rowKey="id"
-                  style={{ display: "none" }}
-                />
-                <div style={{ marginTop: 10 }}>
-                  <Typography.Text>
-                    第 {pagination.current}-
-                    {Math.min(
-                      pagination.current * pagination.pageSize,
-                      pagination.total
-                    )}{" "}
-                    条，共 {pagination.total} 条
-                  </Typography.Text>
-                </div>
-              </div>
+              <Pagination
+                current={pagination.current}
+                pageSize={pagination.pageSize}
+                total={pagination.total}
+                onChange={handlePageChange}
+                showSizeChanger={false}
+                showTotal={(total, range) =>
+                  `第 ${range[0]}-${range[1]} 条，共 ${total} 条`
+                }
+              />
             </div>
           </Spin>
         </Card>

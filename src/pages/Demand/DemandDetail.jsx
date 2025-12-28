@@ -59,7 +59,7 @@ const DemandDetail = () => {
           const name = response.data?.name || response.name || '';
           setLocationName(name);
         } catch (error) {
-          console.error('获取位置信息失败:', error);
+          //console.error('获取位置信息失败:', error);
           setLocationName('');
         }
       } else if (currentDemand && currentDemand.address) {

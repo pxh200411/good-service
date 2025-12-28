@@ -61,7 +61,7 @@ const IServe = () => {
         try {
           await getMyServiceResponses(userInfo.id);
         } catch (error) {
-          console.error('加载服务响应失败:', error);
+          //console.error('加载服务响应失败:', error);
           message.error('加载服务响应失败，请稍后重试');
         }
       } else {
@@ -108,7 +108,7 @@ const IServe = () => {
           await deleteMyServiceResponse(responseId);
           message.success("响应删除成功");
         } catch (error) {
-          console.error("删除响应失败:", error);
+          //console.error("删除响应失败:", error);
           message.error("删除失败，请稍后重试");
         }
       },

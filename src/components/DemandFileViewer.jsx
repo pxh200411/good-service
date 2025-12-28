@@ -21,7 +21,7 @@ const DemandFileViewer = ({ demandId, title = "相关文件" }) => {
     setLoading(true);
     try {
       const response = await getLatestDemandFile(demandId, false);
-      console.log('[DEBUG] DemandFileViewer checkFileStatus response:', response);
+      //console.log('[DEBUG] DemandFileViewer checkFileStatus response:', response);
       
       // 处理二进制文件数据
       if (response) {
@@ -55,7 +55,7 @@ const DemandFileViewer = ({ demandId, title = "相关文件" }) => {
         setImageUrl(null);
       }
     } catch (error) {
-      console.error('检查文件状态失败:', error);
+      //console.error('检查文件状态失败:', error);
       setHasFile(false);
       setFileInfo(null);
       setImageUrl(null);
@@ -100,7 +100,7 @@ const DemandFileViewer = ({ demandId, title = "相关文件" }) => {
       
       message.success('开始下载文件');
     } catch (error) {
-      console.error('文件下载失败:', error);
+      //console.error('文件下载失败:', error);
       message.error('文件下载失败: ' + (error.message || '未知错误'));
     }
   };

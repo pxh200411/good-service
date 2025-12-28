@@ -156,95 +156,95 @@ const DemandForm = () =>
       if (isEditMode && id) {
         // 编辑需求
         try {
-          console.log('开始更新需求，ID:', id, '数据:', submitData);
+          //console.log('开始更新需求，ID:', id, '数据:', submitData);
           await updateDemand(id, submitData);
-          console.log('需求更新成功');
+          //console.log('需求更新成功');
           
           // 如果有选中的文件，上传文件
           if (selectedFile) {
-            console.log('[DEBUG] DemandForm: starting file upload for:', { fileName: selectedFile.name, demandId: id });
+            //console.log('[DEBUG] DemandForm: starting file upload for:', { fileName: selectedFile.name, demandId: id });
             setFileUploading(true);
             
             try {
               // 使用 uploadDemandFile API 直接上传文件
-              console.log('[DEBUG] DemandForm: importing uploadDemandFile API');
+              //console.log('[DEBUG] DemandForm: importing uploadDemandFile API');
               const { uploadDemandFile } = await import('../../api/modules/demandFile');
               
-              console.log('[DEBUG] DemandForm: calling uploadDemandFile with progress callback');
+              //console.log('[DEBUG] DemandForm: calling uploadDemandFile with progress callback');
               const fileUploadResult = await uploadDemandFile(id, selectedFile, {
                 onProgress: (progress) => {
-                  console.log('[DEBUG] DemandForm: file upload progress:', progress + '%');
+                  //console.log('[DEBUG] DemandForm: file upload progress:', progress + '%');
                 }
               });
               
-              console.log('[DEBUG] DemandForm: file upload completed successfully:', fileUploadResult);
+              //console.log('[DEBUG] DemandForm: file upload completed successfully:', fileUploadResult);
               message.success('需求更新成功，文件已上传');
             } catch (fileError) {
-              console.error('[DEBUG] DemandForm: file upload failed:', fileError);
+              //console.error('[DEBUG] DemandForm: file upload failed:', fileError);
               message.warning('需求更新成功，但文件上传失败，请稍后重试');
             } finally {
-              console.log('[DEBUG] DemandForm: file upload finished');
+              //console.log('[DEBUG] DemandForm: file upload finished');
               setFileUploading(false);
             }
           } else {
-            console.log('[DEBUG] DemandForm: no file to upload, demand updated successfully');
+            //console.log('[DEBUG] DemandForm: no file to upload, demand updated successfully');
             message.success('需求更新成功');
           }
           
           // 延迟一下再跳转，确保网络请求完全完成
           setTimeout(() => {
-            console.log('跳转到需求详情页:', `/demand/${id}`);
+            //console.log('跳转到需求详情页:', `/demand/${id}`);
             navigate(`/demand/${id}`);
           }, 100);
         } catch (error) {
-          console.error('更新需求失败:', error);
+          //console.error('更新需求失败:', error);
           message.error('更新需求失败，请重试');
         }
       } else {
         // 创建新需求
         try {
           const demandResult = await createDemand(submitData);
-          console.log('需求创建成功:', demandResult);
+          //console.log('需求创建成功:', demandResult);
           
           // 如果有选中的文件，上传文件
           if (selectedFile) {
-            console.log('[DEBUG] DemandForm: starting file upload for:', { fileName: selectedFile.name, demandId: demandResult.data.id });
+            //console.log('[DEBUG] DemandForm: starting file upload for:', { fileName: selectedFile.name, demandId: demandResult.data.id });
             setFileUploading(true);
             
             try {
               // 使用 uploadDemandFile API 直接上传文件
-              console.log('[DEBUG] DemandForm: importing uploadDemandFile API');
+              //console.log('[DEBUG] DemandForm: importing uploadDemandFile API');
               const { uploadDemandFile } = await import('../../api/modules/demandFile');
               
-              console.log('[DEBUG] DemandForm: calling uploadDemandFile with progress callback');
+              //console.log('[DEBUG] DemandForm: calling uploadDemandFile with progress callback');
               const fileUploadResult = await uploadDemandFile(demandResult.data.id, selectedFile, {
                 onProgress: (progress) => {
-                  console.log('[DEBUG] DemandForm: file upload progress:', progress + '%');
+                  //console.log('[DEBUG] DemandForm: file upload progress:', progress + '%');
                 }
               });
               
-              console.log('[DEBUG] DemandForm: file upload completed successfully:', fileUploadResult);
+              //console.log('[DEBUG] DemandForm: file upload completed successfully:', fileUploadResult);
               message.success('需求创建成功，文件已上传');
             } catch (fileError) {
-              console.error('[DEBUG] DemandForm: file upload failed:', fileError);
+              //console.error('[DEBUG] DemandForm: file upload failed:', fileError);
               message.warning('需求创建成功，但文件上传失败，请稍后重试');
             } finally {
-              console.log('[DEBUG] DemandForm: file upload finished');
+              //console.log('[DEBUG] DemandForm: file upload finished');
               setFileUploading(false);
             }
           } else {
-            console.log('[DEBUG] DemandForm: no file to upload, demand created successfully');
+            //console.log('[DEBUG] DemandForm: no file to upload, demand created successfully');
             message.success('需求创建成功');
           }
           
           navigate('/demand');
         } catch (error) {
-          console.error('创建需求失败:', error);
+          //console.error('创建需求失败:', error);
           message.error('创建需求失败，请重试');
         }
       }
     } catch (errorInfo) {
-      console.log('表单验证失败:', errorInfo);
+      //console.log('表单验证失败:', errorInfo);
       message.error('表单验证失败，请检查填写内容');
     }
   };
@@ -450,10 +450,10 @@ const DemandForm = () =>
               <Form.Item label="附件上传">
                 <FileUploader
                   onUpload={(file, options) => {
-                    console.log('[DEBUG] DemandForm FileUploader onUpload called:', { fileName: file.name, fileSize: file.size, options });
+                    //console.log('[DEBUG] DemandForm FileUploader onUpload called:', { fileName: file.name, fileSize: file.size, options });
                     setSelectedFile(file);
                     message.success('文件已选择，将在提交时上传');
-                    console.log('[DEBUG] DemandForm: file selected and stored for later upload:', file.name);
+                    //console.log('[DEBUG] DemandForm: file selected and stored for later upload:', file.name);
                     return Promise.resolve({ success: true, file });
                   }}
                   accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar,.jpg,.jpeg,.png,.gif,.bmp,.svg,.mp4,.avi,.mov,.wmv,.flv,.webm,.mkv"

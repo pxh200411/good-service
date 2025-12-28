@@ -110,10 +110,10 @@ const Analytics = () => {
       try {
         // 优先使用区县名称，如果没有区县则使用城市名称
         const searchKeyword = location.item || location.city || location.province;
-        console.log('搜索地点关键词:', searchKeyword);
+        //console.log('搜索地点关键词:', searchKeyword);
         
         const searchResponse = await searchLocations(searchKeyword);
-        console.log('地点搜索结果:', searchResponse);
+        //console.log('地点搜索结果:', searchResponse);
         
         // 从搜索结果中提取location ID
         if (searchResponse && Array.isArray(searchResponse)) {
@@ -122,9 +122,9 @@ const Analytics = () => {
           locationIds = [searchResponse.id];
         }
         
-        console.log('提取的location IDs:', locationIds);
+        //console.log('提取的location IDs:', locationIds);
       } catch (searchError) {
-        console.warn('地点搜索失败，使用原有itemId:', searchError);
+        //console.warn('地点搜索失败，使用原有itemId:', searchError);
         // 如果搜索失败，回退到使用原有的itemId
         if (location.itemId) {
           locationIds = [location.itemId];
@@ -160,7 +160,7 @@ const Analytics = () => {
           latestCreateTime: endDate.toDate(),
         };
 
-        console.log('初始查询API请求参数:', requestParams);
+        //console.log('初始查询API请求参数:', requestParams);
 
         // 调用统计API获取数据
         const [creationResponse, respondedResponse] = await Promise.all([
@@ -168,8 +168,8 @@ const Analytics = () => {
           getMonthlyRespondedStatistics(requestParams)
         ]);
 
-        console.log('初始创建统计API响应:', creationResponse);
-        console.log('初始响应统计API响应:', respondedResponse);
+        //console.log('初始创建统计API响应:', creationResponse);
+        //console.log('初始响应统计API响应:', respondedResponse);
 
         // 处理API返回的数据
         const processedData = processStatisticsApiResponse(
@@ -182,7 +182,7 @@ const Analytics = () => {
         setStatisticsData(processedData);
         prepareChartData(processedData);
       } catch (error) {
-        console.error('初始查询失败:', error);
+        //console.error('初始查询失败:', error);
         const mockData = generateMockData({ dateRange: [startDate, endDate] });
         setStatisticsData(mockData);
         prepareChartData(mockData);
@@ -215,7 +215,7 @@ const Analytics = () => {
         latestCreateTime: endDate.toDate(),
       };
 
-      console.log('统计API请求参数:', requestParams);
+      //console.log('统计API请求参数:', requestParams);
 
       // 调用统计API获取数据
       const [creationResponse, respondedResponse] = await Promise.all([
@@ -223,8 +223,8 @@ const Analytics = () => {
         getMonthlyRespondedStatistics(requestParams)
       ]);
 
-      console.log('创建统计API响应:', creationResponse);
-      console.log('响应统计API响应:', respondedResponse);
+      //console.log('创建统计API响应:', creationResponse);
+      //console.log('响应统计API响应:', respondedResponse);
 
       // 处理API返回的数据
       const processedData = processStatisticsApiResponse(
@@ -238,7 +238,7 @@ const Analytics = () => {
       prepareChartData(processedData);
       
     } catch (error) {
-      console.error('查询数据失败:', error);
+      //console.error('查询数据失败:', error);
       setApiError(error.message || '查询数据失败，请稍后重试');
       
       // 如果API调用失败，生成模拟数据用于演示
@@ -402,10 +402,10 @@ const Analytics = () => {
     const demandCounts = stats.map((item) => item.monthlyDemands);
     const responseCounts = stats.map((item) => item.monthlyResponses);
 
-    console.log('[DEBUG] prepareChartData - stats:', stats);
-    console.log('[DEBUG] prepareChartData - months:', months);
-    console.log('[DEBUG] prepareChartData - demandCounts:', demandCounts);
-    console.log('[DEBUG] prepareChartData - responseCounts:', responseCounts);
+    //console.log('[DEBUG] prepareChartData - stats:', stats);
+    //console.log('[DEBUG] prepareChartData - months:', months);
+    //console.log('[DEBUG] prepareChartData - demandCounts:', demandCounts);
+    //console.log('[DEBUG] prepareChartData - responseCounts:', responseCounts);
 
     setChartData({
       months,

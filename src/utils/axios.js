@@ -21,10 +21,10 @@ const instance = axios.create({
 
 // 添加请求拦截器
 instance.interceptors.request.use(requestInterceptor, requestErrorHandler);
-console.log('✅ 请求拦截器已注册');
+//console.log('✅ 请求拦截器已注册');
 
 // 添加响应拦截器
 instance.interceptors.response.use(responseInterceptor, responseErrorHandler);
-console.log('✅ 响应拦截器已注册');
+//console.log('✅ 响应拦截器已注册');
 
 export default instance;

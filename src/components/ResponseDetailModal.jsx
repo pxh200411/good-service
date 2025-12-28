@@ -45,12 +45,12 @@ const ResponseDetailModal = ({
     if (!demandId) return;
     try {
       setFileInfoLoading(true);
-      console.log('[DEBUG] ResponseDetailModal: fetching file info for demandId:', demandId);
+      //console.log('[DEBUG] ResponseDetailModal: fetching file info for demandId:', demandId);
       const response = await getLatestDemandFile(demandId, false); // 获取元数据
-      console.log('[DEBUG] ResponseDetailModal: file info received:', response.data);
+      //console.log('[DEBUG] ResponseDetailModal: file info received:', response.data);
       setFileInfo(response.data);
     } catch (error) {
-      console.error('[DEBUG] ResponseDetailModal: failed to fetch file info:', error);
+      //console.error('[DEBUG] ResponseDetailModal: failed to fetch file info:', error);
       setFileInfo(null); // 清除旧信息
       // 可以选择性地显示错误消息，或者静默失败
       // message.error('获取文件信息失败: ' + (error.message || '未知错误'));
@@ -87,7 +87,7 @@ const ResponseDetailModal = ({
       if (onAccept) onAccept();
       onCancel();
     } catch (error) {
-      console.error('接受响应失败:', error);
+      //console.error('接受响应失败:', error);
       message.error('接受失败，请稍后重试');
     }
   };
@@ -100,7 +100,7 @@ const ResponseDetailModal = ({
       if (onReject) onReject();
       onCancel();
     } catch (error) {
-      console.error('拒绝响应失败:', error);
+      //console.error('拒绝响应失败:', error);
       message.error('拒绝失败，请稍后重试');
     }
   };
@@ -114,10 +114,10 @@ const ResponseDetailModal = ({
 
     try {
       setDownloading(true);
-      console.log('[DEBUG] ResponseDetailModal: starting download for demandId:', response.demandId);
+      //console.log('[DEBUG] ResponseDetailModal: starting download for demandId:', response.demandId);
       
       const response_data = await getLatestDemandFile(response.demandId, true);
-      console.log('[DEBUG] ResponseDetailModal: download response received:', response_data);
+      //console.log('[DEBUG] ResponseDetailModal: download response received:', response_data);
       
       // 创建下载链接
       const url = window.URL.createObjectURL(new Blob([response_data.data]));
@@ -131,13 +131,13 @@ const ResponseDetailModal = ({
       window.URL.revokeObjectURL(url);
       
       message.success('文件下载已开始');
-      console.log('[DEBUG] ResponseDetailModal: download completed successfully');
+      //console.log('[DEBUG] ResponseDetailModal: download completed successfully');
     } catch (error) {
-      console.error('[DEBUG] ResponseDetailModal: download failed:', error);
+      //console.error('[DEBUG] ResponseDetailModal: download failed:', error);
       message.error('文件下载失败: ' + (error.message || '未知错误'));
     } finally {
       setDownloading(false);
-      console.log('[DEBUG] ResponseDetailModal: download finished');
+      //console.log('[DEBUG] ResponseDetailModal: download finished');
     }
   };
 

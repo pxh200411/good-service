@@ -60,7 +60,7 @@ const Profile = () => {
         biography: userData.biography || '',
       });
     } catch (error) {
-      console.error('加载用户详情失败:', error);
+      //console.error('加载用户详情失败:', error);
       setError('加载用户信息失败，请稍后重试');
       // 如果API调用失败，使用store中的用户信息
       form.setFieldsValue({
@@ -96,7 +96,7 @@ const Profile = () => {
       message.success('个人信息更新成功！');
       setUserDetails({ ...userDetails, ...updatedUser });
     } catch (error) {
-      console.error('更新个人信息失败:', error);
+      //console.error('更新个人信息失败:', error);
       setError(error.response?.data?.message || '更新个人信息失败，请稍后重试');
       message.error('更新个人信息失败');
     } finally {
@@ -120,7 +120,7 @@ const Profile = () => {
       message.success('密码修改成功！');
       passwordForm.resetFields();
     } catch (error) {
-      console.error('修改密码失败:', error);
+      //console.error('修改密码失败:', error);
       setError(error.response?.data?.message || '修改密码失败，请稍后重试');
       message.error('修改密码失败');
     } finally {
