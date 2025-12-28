@@ -1,11 +1,13 @@
 :root {
   /* 品牌主色 */
-  --primary-color: #ff6b35; /* 活力橙红 */
-  --primary-hover: #ff8e66;
-  --primary-active: #cc4e22;
+  --primary-color: #f2beab;
+  /* 活力橙红 */
+  --primary-hover: #cab3ab;
+  --primary-active: #ffcfbe;
 
   /* 背景色 */
-  --bg-body: #f7f4f0; /* 极淡的暖米色，比冷灰更温馨 */
+  --bg-body: #f7f4f0;
+  /* 极淡的暖米色，比冷灰更温馨 */
   --bg-container: #ffffff;
 
   /* 文字颜色 - 稍微带一点点暖色调的黑 */
@@ -14,7 +16,8 @@
   --text-disabled: #b2bec3;
 
   /* 功能色 */
-  --success-color: #8bcbbe; /* 这种绿色配橙色很好看 */
+  --success-color: #8bcbbe;
+  /* 这种绿色配橙色很好看 */
   --warning-color: #fdcb6e;
   --error-color: #e98b8b;
   --link-color: #e17055;
@@ -49,3 +52,27 @@ body {
   color: #666666 !important;
   font-weight: 600 !important;
 }
+
+/* 覆盖 Ant Design 的 error Alert 颜色（更高优先级）
+   可直接修改下面的颜色值，或将其设为 CSS 变量并在 :root 中统一管理 */
+.ant-alert.ant-alert-error {
+  background-color: #fdecea !important;
+  /* 背景 */
+  border-color: #f5c6cb !important;
+  /* 边框 */
+  color: #a94442 !important;
+  /* 默认文字颜色 */
+}
+
+.ant-alert.ant-alert-error .ant-alert-message,
+.ant-alert.ant-alert-error .ant-alert-description {
+  color: #a94442 !important;
+}
+
+.ant-alert.ant-alert-error .ant-alert-icon {
+  color: #a94442 !important;
+  /* 图标颜色 */
+}
+
+/* 如果只想改某个具体实例，可以用更高特异性的 class 选择器，例如：
+   .my-alert .ant-alert.ant-alert-error { ... } */
